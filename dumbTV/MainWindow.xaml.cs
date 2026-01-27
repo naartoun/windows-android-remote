@@ -14,38 +14,12 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Runtime.InteropServices;
+using static dumbTV.Core.NativeMethods;
 
 namespace dumbTV
 {
     public static class GlobalCursor
     {
-        private const uint OCR_NORMAL = 32512; // šipka
-        private const uint OCR_IBEAM = 32513; // textový kurzor
-        private const uint OCR_WAIT = 32514; // hodiny/kolečko
-        private const uint OCR_CROSS = 32515; // kříž
-        private const uint OCR_UP = 32516; // šipka nahoru
-        private const uint OCR_SIZE = 32640; // všeobecný resize
-        private const uint OCR_ICON = 32641;
-        private const uint OCR_SIZENWSE = 32642; // resize ↘↖
-        private const uint OCR_SIZENESW = 32643; // resize ↗↙
-        private const uint OCR_SIZEWE = 32644; // resize ↔
-        private const uint OCR_SIZENS = 32645; // resize ↕
-        private const uint OCR_SIZEALL = 32646; // čtyřšipka
-        private const uint OCR_NO = 32648; // přeškrtnutý kruh
-        private const uint OCR_HAND = 32649; // ručička (odkaz)
-        private const uint OCR_APPSTARTING = 32650; // šipka + kolečko
-
-        private const uint SPI_SETCURSORS = 0x57;
-
-        [DllImport("user32.dll", SetLastError = true)]
-        static extern bool SetSystemCursor(IntPtr hcur, uint id);
-
-        [DllImport("user32.dll", SetLastError = true)]
-        static extern IntPtr LoadCursorFromFile(string lpFileName);
-
-        [DllImport("user32.dll", SetLastError = true)]
-        static extern bool SystemParametersInfo(uint uiAction, uint uiParam, IntPtr pvParam, uint fWinIni);
-
         public static void ApplyCustomCursor(string cursorFilePath)
         {
             uint[] ids = new uint[]
@@ -410,8 +384,6 @@ namespace dumbTV
             }
         }
 
-        [DllImport("user32.dll")]
-        static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
 
         private bool IsBombujAppRunning()
         {
@@ -653,40 +625,6 @@ namespace dumbTV
                    height >= (int)screenHeight;
         }
 
-        // WinAPI declarations
-        [DllImport("user32.dll")] static extern IntPtr FindWindow(string lpClassName, string lpWindowName);
-        [DllImport("user32.dll")] static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
-        [DllImport("user32.dll")] static extern bool SetForegroundWindow(IntPtr hWnd);
-        [DllImport("user32.dll")] static extern bool IsWindowVisible(IntPtr hWnd);
-        [DllImport("user32.dll")] static extern int GetWindowText(IntPtr hWnd, StringBuilder text, int count);
-        [DllImport("user32.dll")] static extern bool EnumWindows(EnumWindowsProc lpEnumFunc, IntPtr lParam);
-        private delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
-
-        [DllImport("user32.dll")] static extern bool PostMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
-        [DllImport("user32.dll")] static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
-
-        private const int SW_MAXIMIZE = 3;
-        private const uint WM_KEYDOWN = 0x0100;
-        private const uint WM_KEYUP = 0x0101;
-        private const int VK_F11 = 0x7A;
-        private const int VK_BROWSER_BACK = 0xA6;
-        private const int VK_HOME = 0x24;
-        private const int VK_VOLUME_MUTE = 0xAD;
-        private const int VK_VOLUME_DOWN = 0xAE;
-        private const int VK_VOLUME_UP = 0xAF;
-        private const int VK_BACK = 0x08;
-
-        [StructLayout(LayoutKind.Sequential)] public struct RECT { public int Left, Top, Right, Bottom; }
-        [StructLayout(LayoutKind.Sequential)] public struct POINT { public int X, Y; }
-
-        [DllImport("user32.dll")] static extern bool GetCursorPos(out POINT lpPoint);
-        [DllImport("user32.dll")] static extern bool SetCursorPos(int X, int Y);
-        [DllImport("user32.dll")] static extern void mouse_event(uint dwFlags, int dx, int dy, uint dwData, UIntPtr dwExtraInfo);
-
-        const uint MOUSEEVENTF_LEFTDOWN = 0x02;
-        const uint MOUSEEVENTF_LEFTUP = 0x04;
-        const uint MOUSEEVENTF_RIGHTDOWN = 0x08;
-        const uint MOUSEEVENTF_RIGHTUP = 0x10;
 
         public void MoveCursor(int dx, int dy)
         {
@@ -715,12 +653,6 @@ namespace dumbTV
             mouse_event(MOUSEEVENTF_RIGHTDOWN | MOUSEEVENTF_RIGHTUP, p.X, p.Y, 0, UIntPtr.Zero);
         }
 
-        // Cursor moves
-        const int VK_RETURN = 0x0D;
-        const int VK_LEFT = 0x25;
-        const int VK_UP = 0x26;
-        const int VK_RIGHT = 0x27;
-        const int VK_DOWN = 0x28;
 
         public void UpClick()
         {
@@ -860,8 +792,6 @@ namespace dumbTV
             SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<INPUT>());
         }*/
 
-        [DllImport("user32.dll")]
-        static extern void keybd_event(byte bVk, byte bScan, int dwFlags, int dwExtraInfo);
 
         public void SendChar(char c)
         {
@@ -896,10 +826,6 @@ namespace dumbTV
             keybd_event((byte)vk, 0, (int)KEYEVENTF_KEYUP, (int)UIntPtr.Zero);
         }
 
-        [DllImport("user32.dll")]
-        static extern short VkKeyScan(char ch);
-
-        private const int VK_SPACE = 0x20;
 
         private void SendSpaceKeyToWindow(IntPtr hWnd)
         {
