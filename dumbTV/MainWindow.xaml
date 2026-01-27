@@ -1,0 +1,188 @@
+﻿<Window x:Name="dumbTV" x:Class="dumbTV.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="dumbTV" Height="1080" Width="1920"
+        Loaded="Window_Loaded"
+        WindowState="Maximized"
+        ResizeMode="NoResize"
+        Cursor="None"
+        AllowsTransparency="False"
+        WindowStyle="None"
+        WindowStartupLocation="CenterScreen" Icon="/dumbTVlogo.png">
+    <Window.Background>
+        <LinearGradientBrush x:Name="bgGradient" StartPoint="0,0" EndPoint="1,1">
+            <GradientStop x:Name="gradientStop1" Color="#FF1E1E1E" Offset="0"/>
+            <GradientStop x:Name="gradientStop2" Color="#FF3C3C3C" Offset="1"/>
+        </LinearGradientBrush>
+    </Window.Background>
+
+    <Window.Resources>
+        <ImageBrush x:Key="YouTubeBrush"    ImageSource="ytlogo.png" Stretch="Fill"/>
+        <ImageBrush x:Key="VLCBrush"        ImageSource="vlclogo.png" Stretch="Fill"/>
+        <ImageBrush x:Key="BombujBrush"     ImageSource="bombujlogo.png" Stretch="Fill"/>
+        <ImageBrush x:Key="iVysilaniBrush"  ImageSource="ivysilanilogo.png" Stretch="Fill"/>
+        <ImageBrush x:Key="InternetBrush"   ImageSource="bravelogo.png" Stretch="Fill"/>
+        <Style x:Key="IconButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border"
+                                Width="{TemplateBinding Width}"
+                                Height="{TemplateBinding Height}"
+                                CornerRadius="20"
+                                ClipToBounds="True"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                RenderTransformOrigin="0.5,0.5">
+
+                            <Border.RenderTransform>
+                                <ScaleTransform x:Name="scaleTransform" ScaleX="1" ScaleY="1"/>
+                            </Border.RenderTransform>
+
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Trigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="scaleTransform"
+                                                             Storyboard.TargetProperty="ScaleX"
+                                                             To="1.1" Duration="0:0:0.1"/>
+                                            <DoubleAnimation Storyboard.TargetName="scaleTransform"
+                                                             Storyboard.TargetProperty="ScaleY"
+                                                             To="1.1" Duration="0:0:0.1"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.EnterActions>
+                                <Trigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="scaleTransform"
+                                                             Storyboard.TargetProperty="ScaleX"
+                                                             To="1.0" Duration="0:0:0.1"/>
+                                            <DoubleAnimation Storyboard.TargetName="scaleTransform"
+                                                             Storyboard.TargetProperty="ScaleY"
+                                                             To="1.0" Duration="0:0:0.1"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.ExitActions>
+
+                                <Setter TargetName="border" Property="BorderBrush" Value="White"/>
+                                <Setter TargetName="border" Property="BorderThickness" Value="7"/>
+                            </Trigger>
+
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="IsMouseOver" Value="True"/>
+                                    <Condition Property="IsKeyboardFocused" Value="False"/>
+                                </MultiTrigger.Conditions>
+                                <MultiTrigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="scaleTransform"
+                                 Storyboard.TargetProperty="ScaleX"
+                                 To="1.1" Duration="0:0:0.1"/>
+                                            <DoubleAnimation Storyboard.TargetName="scaleTransform"
+                                 Storyboard.TargetProperty="ScaleY"
+                                 To="1.1" Duration="0:0:0.1"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </MultiTrigger.EnterActions>
+                                <MultiTrigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="scaleTransform"
+                                 Storyboard.TargetProperty="ScaleX"
+                                 To="1.0" Duration="0:0:0.1"/>
+                                            <DoubleAnimation Storyboard.TargetName="scaleTransform"
+                                 Storyboard.TargetProperty="ScaleY"
+                                 To="1.0" Duration="0:0:0.1"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </MultiTrigger.ExitActions>
+                                <Setter TargetName="border" Property="BorderBrush" Value="White"/>
+                                <Setter TargetName="border" Property="BorderThickness" Value="7"/>
+                            </MultiTrigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+    
+    <Viewbox Stretch="Uniform">
+        <Grid Width="1920" Height="1080" KeyboardNavigation.DirectionalNavigation="Cycle" KeyboardNavigation.TabNavigation="Cycle">
+            <!-- YouTube -->
+            <StackPanel HorizontalAlignment="Left" VerticalAlignment="Center" Margin="105,-50,0,0">
+                <Button x:Name="YouTubeButton"
+                        Style="{StaticResource IconButtonStyle}"
+                        Width="250" Height="250"
+                        Background="{StaticResource YouTubeBrush}"
+                        Click="YouTubeButton_Click"
+                        ClickMode="Press"
+                        Cursor="None"/>
+                <TextBlock Text="YouTube" Foreground="White"
+                           FontSize="40" HorizontalAlignment="Center" Margin="0,10,0,0"/>
+            </StackPanel>
+
+            <!-- VLC -->
+            <StackPanel HorizontalAlignment="Left" VerticalAlignment="Center" Margin="470,-50,0,0">
+                <Button x:Name="VLCButton"
+                        Style="{StaticResource IconButtonStyle}"
+                        Width="250" Height="250"
+                        Background="{StaticResource VLCBrush}"
+                        Click="VLCButton_Click"
+                        ClickMode="Press"
+                        Cursor="None"/>
+                <TextBlock Text="VLC" Foreground="White"
+                           FontSize="40" HorizontalAlignment="Center" Margin="0,10,0,0"/>
+            </StackPanel>
+            
+            <!-- Bombuj -->
+            <StackPanel HorizontalAlignment="Left" VerticalAlignment="Center" Margin="835,-50,0,0">
+                <Button x:Name="BombujButton"
+                        Style="{StaticResource IconButtonStyle}"
+                        Width="250" Height="250"
+                        Background="{StaticResource BombujBrush}"
+                        Click="BombujButton_Click"
+                        ClickMode="Press"
+                        Cursor="None"/>
+                <TextBlock Text="Bombuj" Foreground="White"
+                           FontSize="40" HorizontalAlignment="Center" Margin="0,10,0,0"/>
+            </StackPanel>
+
+            <!-- iVysilani -->
+            <StackPanel HorizontalAlignment="Left" VerticalAlignment="Center" Margin="1200,-50,0,0">
+                <Button x:Name="iVysilaniButton"
+                        Style="{StaticResource IconButtonStyle}"
+                        Width="250" Height="250"
+                        Background="{StaticResource iVysilaniBrush}"
+                        Click="iVysilaniButton_Click"
+                        ClickMode="Press"
+                        Cursor="None"/>
+                <TextBlock Text="iVysílání" Foreground="White"
+                           FontSize="40" HorizontalAlignment="Center" Margin="0,10,0,0"/>
+            </StackPanel>
+
+            <!-- Internet -->
+            <StackPanel HorizontalAlignment="Left" VerticalAlignment="Center" Margin="1565,-50,0,0">
+                <Button x:Name="InternetButton"
+                        Style="{StaticResource IconButtonStyle}"
+                        Width="250" Height="250"
+                        Background="{StaticResource InternetBrush}"
+                        Click="InternetButton_Click"
+                        ClickMode="Press"
+                        Cursor="None"/> 
+                <TextBlock Text="Internet" Foreground="White"
+                           FontSize="40" HorizontalAlignment="Center" Margin="0,10,0,0"/>
+            </StackPanel>
+        </Grid>
+    </Viewbox>
+</Window>

@@ -1,0 +1,231 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:local="clr-namespace:TvojeNamespace"
+    x:Class="MauiApp1.MainPage"
+    NavigationPage.HasNavigationBar="False">
+
+    <AbsoluteLayout
+      x:Name="RootLayout"
+      HorizontalOptions="Center"
+      VerticalOptions="Center"
+      WidthRequest="400"
+      HeightRequest="800">
+
+        <!-- skrytý Entry pro klávesnici -->
+        <Entry
+            x:Name="KeyboardEntry"
+            TextColor="Transparent"
+            Placeholder=""
+            TextChanged="KeyboardEntry_TextChanged"
+            Completed="KeyboardEntry_Completed"
+            BackgroundColor="Transparent"
+            PlaceholderColor="Transparent"
+            AbsoluteLayout.LayoutBounds="2,2,2,1"
+            AbsoluteLayout.LayoutFlags="All" />
+
+        <!-- Touchpad -->
+        <Frame
+            x:Name="TouchpadArea"
+            IsVisible="False"
+            BackgroundColor="LightGrey"
+            CornerRadius="30"
+            Padding="0"
+            HasShadow="False"
+            AbsoluteLayout.LayoutBounds="0.5,0.36,330,330"
+            AbsoluteLayout.LayoutFlags="PositionProportional">
+
+            <AbsoluteLayout
+                x:Name="TouchpadLayout"
+                WidthRequest="300"
+                HeightRequest="300">
+                <!-- Knob -->
+                <Frame
+                    x:Name="Knob"
+                    WidthRequest="60"
+                    HeightRequest="60"
+                    CornerRadius="30"
+                    BackgroundColor="DarkGray"
+                    HasShadow="False"
+                    AbsoluteLayout.LayoutBounds="0.5,0.5,60,60"
+                    AbsoluteLayout.LayoutFlags="PositionProportional">
+                    <Frame.GestureRecognizers>
+                        <PanGestureRecognizer PanUpdated="OnKnobPanUpdated" />
+                    </Frame.GestureRecognizers>
+                </Frame>
+            </AbsoluteLayout>
+        </Frame>
+
+        <!-- ovládací kolečko -->
+        <AbsoluteLayout
+        x:Name="ControlWheel"
+        WidthRequest="300"
+        HeightRequest="300"
+        IsVisible="true"
+        AbsoluteLayout.LayoutBounds="0.5,0.37,300,300"
+        AbsoluteLayout.LayoutFlags="PositionProportional">
+
+            <Frame
+          BackgroundColor="LightGray"
+          CornerRadius="150"
+          WidthRequest="300"
+          HeightRequest="300"
+          AbsoluteLayout.LayoutBounds="0.5,0.5,300,300"
+          AbsoluteLayout.LayoutFlags="PositionProportional"
+          HasShadow="False" />
+
+            <!-- středové tlačítko -->
+            <Button
+          BackgroundColor="#424242"
+          CornerRadius="75"
+          WidthRequest="150"
+          HeightRequest="150"
+          AbsoluteLayout.LayoutBounds="0.5,0.5,150,150"
+          AbsoluteLayout.LayoutFlags="PositionProportional"
+          Clicked="OnMouseLeftClicked" />
+
+            <!-- kurzory s hold -->
+            <Button Text="↑" FontSize="50" TextColor="#424242"
+              BackgroundColor="Transparent"
+              WidthRequest="120" HeightRequest="80" CornerRadius="40"
+              Padding="0,0,0,21"
+              AbsoluteLayout.LayoutBounds="0.5,0,120,80"
+              AbsoluteLayout.LayoutFlags="PositionProportional"
+              Pressed="OnUpPressed"
+              Released="OnUpReleased" />
+
+            <Button Text="↓" FontSize="50" TextColor="#424242"
+              BackgroundColor="Transparent"
+              WidthRequest="120" HeightRequest="80" CornerRadius="40"
+              Padding="0,0,0,21"
+              AbsoluteLayout.LayoutBounds="0.5,1,120,80"
+              AbsoluteLayout.LayoutFlags="PositionProportional"
+              Pressed="OnDownPressed"
+              Released="OnDownReleased" />
+
+            <Button Text="←" FontSize="50" TextColor="#424242"
+              BackgroundColor="Transparent"
+              WidthRequest="80" HeightRequest="120" CornerRadius="40"
+              Padding="0,0,0,21"
+              AbsoluteLayout.LayoutBounds="-0.01,0.5,80,120"
+              AbsoluteLayout.LayoutFlags="PositionProportional"
+              Pressed="OnLeftPressed"
+              Released="OnLeftReleased" />
+
+            <Button Text="→" FontSize="50" TextColor="#424242"
+              BackgroundColor="Transparent"
+              WidthRequest="80" HeightRequest="120" CornerRadius="40"
+              Padding="0,0,0,21"
+              AbsoluteLayout.LayoutBounds="1.01,0.5,80,120"
+              AbsoluteLayout.LayoutFlags="PositionProportional"
+              Pressed="OnRightPressed"
+              Released="OnRightReleased" />
+
+        </AbsoluteLayout>
+
+        <!-- dolní řada -->
+        <AbsoluteLayout
+        WidthRequest="300"
+        HeightRequest="80"
+        AbsoluteLayout.LayoutBounds="0.5,0.76,300,80"
+        AbsoluteLayout.LayoutFlags="PositionProportional">
+
+            <Button Text="↩" FontSize="50" TextColor="#424242"
+              BackgroundColor="LightGray"
+              WidthRequest="80" HeightRequest="80" CornerRadius="40"
+              Padding="0,0,4,21"
+              AbsoluteLayout.LayoutBounds="-0.05,2,60,60"
+              AbsoluteLayout.LayoutFlags="PositionProportional"
+              Clicked="OnBackClicked" />
+
+            <Button Text="⌂" FontSize="50" TextColor="#424242"
+              BackgroundColor="LightGray"
+              WidthRequest="110" HeightRequest="110" CornerRadius="60"
+              Padding="0,0,0,5"
+              AbsoluteLayout.LayoutBounds="0.5,2,60,60"
+              AbsoluteLayout.LayoutFlags="PositionProportional"
+              Clicked="OnHomeClicked" />
+
+            <Button Text="🖱️" FontSize="50" TextColor="#424242"
+              BackgroundColor="LightGray"
+              WidthRequest="80" HeightRequest="80" CornerRadius="40"
+              Padding="0"
+              AbsoluteLayout.LayoutBounds="1.05,2,60,60"
+              AbsoluteLayout.LayoutFlags="PositionProportional"
+              Clicked="OnMouseRightClicked" />
+
+        </AbsoluteLayout>
+
+        <!-- hlasitost -->
+        <AbsoluteLayout
+        WidthRequest="300"
+        HeightRequest="80"
+        AbsoluteLayout.LayoutBounds="0.5,0.94,300,80"
+        AbsoluteLayout.LayoutFlags="PositionProportional">
+
+            <Button Text="🔇" FontSize="30" TextColor="#424242"
+              BackgroundColor="LightGray"
+              WidthRequest="80" HeightRequest="80" CornerRadius="40"
+              Padding="0,0,0,0"
+              AbsoluteLayout.LayoutBounds="-0.05,2,60,60"
+              AbsoluteLayout.LayoutFlags="PositionProportional"
+              Clicked="OnMuteClicked" />
+
+            <Button Text="–" FontSize="70" TextColor="#424242"
+              BackgroundColor="LightGray"
+              WidthRequest="80" HeightRequest="80" CornerRadius="40"
+              Padding="0,-15,0,20"
+              AbsoluteLayout.LayoutBounds="0.5,2,60,60"
+              AbsoluteLayout.LayoutFlags="PositionProportional"
+              Clicked="OnVolumeDownClicked" />
+
+            <Button Text="+" FontSize="70" TextColor="#424242"
+              BackgroundColor="LightGray"
+              WidthRequest="80" HeightRequest="80" CornerRadius="40"
+              Padding="0,-10,0,20"
+              AbsoluteLayout.LayoutBounds="1.05,2,60,60"
+              AbsoluteLayout.LayoutFlags="PositionProportional"
+              Clicked="OnVolumeUpClicked" />
+
+        </AbsoluteLayout>
+
+        <!-- připojení/klávesnice/touchpad -->
+        <AbsoluteLayout
+        WidthRequest="300"
+        HeightRequest="80"
+        AbsoluteLayout.LayoutBounds="0.5,0.03,300,80"
+        AbsoluteLayout.LayoutFlags="PositionProportional">
+
+            <Button
+          x:Name="ConnectButton"
+          Text="Odpojeno" FontSize="23" TextColor="#424242"
+          BackgroundColor="LightGray"
+          WidthRequest="170" HeightRequest="60" CornerRadius="40"
+          Padding="0"
+          AbsoluteLayout.LayoutBounds="0.15,1,60,60"
+          AbsoluteLayout.LayoutFlags="PositionProportional"
+          Clicked="OnConnectClicked" />
+
+            <Button
+          Text="⦿" FontSize="40" TextColor="#424242"
+          BackgroundColor="LightGray"
+          WidthRequest="60" HeightRequest="60" CornerRadius="30"
+          Padding="1,-2,0,0"
+          AbsoluteLayout.LayoutBounds="0.745,1,60,60"
+          AbsoluteLayout.LayoutFlags="PositionProportional"
+          Clicked="OnTouchpadClicked" />
+
+            <Button
+          Text="⌨️" FontSize="40" TextColor="#424242"
+          BackgroundColor="LightGray"
+          WidthRequest="60" HeightRequest="60" CornerRadius="30"
+          Padding="0"
+          AbsoluteLayout.LayoutBounds="1.1,1,60,60"
+          AbsoluteLayout.LayoutFlags="PositionProportional"
+          Clicked="OnKeyboardClicked" />
+
+        </AbsoluteLayout>
+
+    </AbsoluteLayout>
+</ContentPage>
