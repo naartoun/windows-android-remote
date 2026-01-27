@@ -16,6 +16,7 @@ using System.Windows.Media.Animation;
 using System.Runtime.InteropServices;
 using static dumbTV.Core.NativeMethods;
 using dumbTV.Services;
+using dumbTV.Models;
 
 namespace dumbTV
 {
@@ -27,12 +28,62 @@ namespace dumbTV
         private readonly CursorService _cursorService;
         private readonly InputService _inputService;
 
+        private readonly AppLauncherService _appLauncher;
+
+        private readonly AppItem _appYouTube = new AppItem
+        {
+            Name = "YouTube",
+            ExecutablePath = "brave",
+            Arguments = "--app=https://www.youtube.com",
+            WindowTitleKeyword = "YouTube",
+            SendF11 = true
+        };
+
+        private readonly AppItem _appVLC = new AppItem
+        {
+            Name = "VLC",
+            ExecutablePath = @"C:\Program Files\VideoLAN\VLC\vlc.exe",
+            Arguments = "",
+            WindowTitleKeyword = "VLC",
+            SendF11 = true
+        };
+
+        private readonly AppItem _appBombuj = new AppItem
+        {
+            Name = "Bombuj",
+            ExecutablePath = "brave",
+            Arguments = "--app=https://www.bombuj.si",
+            WindowTitleKeyword = "bombuj",
+            SendF11 = true
+        };
+
+        private readonly AppItem _appIVysilani = new AppItem
+        {
+            Name = "iVysilani",
+            ExecutablePath = "brave",
+            Arguments = "--app=https://www.ivysilani.cz",
+            WindowTitleKeyword = "iVysílání",
+            SendF11 = true
+        };
+
+        private readonly AppItem _appInternet = new AppItem
+        {
+            Name = "Brave",
+            ExecutablePath = "brave",
+            Arguments = "",
+            WindowTitleKeyword = "Brave",
+            ExcludedTitles = new List<string> { "YouTube", "bombuj", "iVysílání" },
+            SendF11 = false
+        };
+
+
         public MainWindow()
         {
             InitializeComponent();
 
             _cursorService = new CursorService();
-            _inputService = new InputService();
+            _inputService  = new InputService();
+            _appLauncher   = new AppLauncherService();
 
             StartWebSocketServer();
             _cursorService.ApplyCustomCursor("C:\\Users\\Radim Kopunec\\Desktop\\dumbTV\\dumbTV\\cursor.cur");
@@ -234,378 +285,58 @@ namespace dumbTV
         {
             try
             {
-                if (!IsYouTubeAppRunning())
-                {
-                    Process.Start(new ProcessStartInfo
-                    {
-                        FileName = "brave",
-                        Arguments = "--app=https://www.youtube.com",
-                        UseShellExecute = true,
-                    });
-
-                    await SendF11ToWindow("YouTube");
-                    await MaximizeWindowByTitle("YouTube");
-                }
+                await _appLauncher.LaunchAppAsync(_appYouTube);
                 currentPage = "YouTube";
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show("YouTube nelze otevřít: " + ex.Message);
-            }
+            catch (Exception ex) { MessageBox.Show($"Error launching YouTube: {ex.Message}"); }
         }
 
-        private bool IsYouTubeAppRunning()
-        {
-            // Hledejte přímo okno podle titulku, ne přes process.MainWindowTitle
-            bool found = false;
-            EnumWindows((hWnd, lParam) =>
-            {
-                if (!IsWindowVisible(hWnd)) return true;
-
-                var sb = new StringBuilder(512);
-                GetWindowText(hWnd, sb, sb.Capacity);
-                string title = sb.ToString();
-
-                if (title.IndexOf("YouTube", StringComparison.OrdinalIgnoreCase) >= 0)
-                {
-                    // Volitelně ověřit, že okno patří procesu "brave"
-                    GetWindowThreadProcessId(hWnd, out var pid);
-                    try
-                    {
-                        var p = Process.GetProcessById((int)pid);
-                        if (!p.HasExited && p.ProcessName.Equals("brave", StringComparison.OrdinalIgnoreCase))
-                        {
-                            ShowWindow(hWnd, SW_MAXIMIZE);
-                            SetForegroundWindow(hWnd);
-                            found = true;
-                            return false;
-                        }
-                    }
-                    catch { }
-                }
-                return true;
-            }, IntPtr.Zero);
-
-            return found;
-        }
 
         // VLC
         private async void VLCButton_Click(object sender, RoutedEventArgs e)
         {
             try
             {
-                if (!IsVLCAppRunning())
-                {
-                    var process = Process.Start("C:/Program Files/VideoLAN/VLC/vlc.exe");
-                    while (process.MainWindowHandle == IntPtr.Zero)
-                    {
-                        await Task.Delay(50);
-                        process.Refresh();
-                    }
-                    SetForegroundWindow(process.MainWindowHandle);
-                    await Task.Delay(100);
-                    await SendF11ToWindow("VLC");
-                }
+                await _appLauncher.LaunchAppAsync(_appVLC);
                 currentPage = "VLC";
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show("VLC nelze otevřít: " + ex.Message);
-            }
+            catch (Exception ex) { MessageBox.Show($"Error launching VLC: {ex.Message}"); }
         }
 
-        private bool IsVLCAppRunning()
-        {
-            foreach (var process in Process.GetProcessesByName("vlc"))
-            {
-                try
-                {
-                    if (!process.HasExited && process.MainWindowTitle.Contains("VLC"))
-                    {
-                        EnumWindows((hWnd, lParam) =>
-                        {
-                            var sb = new StringBuilder(256);
-                            GetWindowText(hWnd, sb, sb.Capacity);
-                            string title = sb.ToString();
-
-                            if (title.Contains("VLC") && IsWindowVisible(hWnd))
-                            {
-                                ShowWindow(hWnd, SW_MAXIMIZE);
-                                SetForegroundWindow(hWnd);
-                                return false;
-                            }
-                            return true;
-                        }, IntPtr.Zero);
-                        return true;
-                    }
-                }
-                catch { }
-            }
-            return false;
-        }
 
         // Bombuj
         private async void BombujButton_Click(object sender, RoutedEventArgs e)
         {
             try
             {
-                if (!IsBombujAppRunning())
-                {
-                    Process.Start(new ProcessStartInfo
-                    {
-                        FileName = "brave",
-                        Arguments = "--app=https://www.bombuj.si",
-                        UseShellExecute = true,
-                    });
-
-                    await SendF11ToWindow("bombuj");
-                    await MaximizeWindowByTitle("bombuj");
-                }
+                await _appLauncher.LaunchAppAsync(_appBombuj);
                 currentPage = "bombuj";
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Bombuj nelze otevřít: " + ex.Message);
-            }
+            catch (Exception ex) { MessageBox.Show($"Error launching Bombuj: {ex.Message}"); }
         }
 
-
-        private bool IsBombujAppRunning()
-        {
-            bool found = false;
-            EnumWindows((hWnd, lParam) =>
-            {
-                if (!IsWindowVisible(hWnd)) return true;
-
-                var sb = new StringBuilder(512);
-                GetWindowText(hWnd, sb, sb.Capacity);
-                string title = sb.ToString();
-
-                if (title.IndexOf("bombuj", StringComparison.OrdinalIgnoreCase) >= 0)
-                {
-                    GetWindowThreadProcessId(hWnd, out var pid);
-                    try
-                    {
-                        var p = Process.GetProcessById((int)pid);
-                        if (!p.HasExited && p.ProcessName.Equals("brave", StringComparison.OrdinalIgnoreCase))
-                        {
-                            ShowWindow(hWnd, SW_MAXIMIZE);
-                            SetForegroundWindow(hWnd);
-                            found = true;
-                            return false;
-                        }
-                    }
-                    catch { }
-                }
-                return true;
-            }, IntPtr.Zero);
-
-            return found;
-        }
 
         // iVysilani
         private async void iVysilaniButton_Click(object sender, RoutedEventArgs e)
         {
             try
             {
-                if (!IsiVysilaniAppRunning())
-                {
-                    Process.Start(new ProcessStartInfo
-                    {
-                        FileName = "brave",
-                        Arguments = "--app=https://www.ivysilani.cz",
-                        UseShellExecute = true,
-                    });
-
-                    await SendF11ToWindow("iVysílání");
-                    await MaximizeWindowByTitle("iVysílání");
-                }
+                await _appLauncher.LaunchAppAsync(_appIVysilani);
                 currentPage = "iVysílání";
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show("iVysíláni nelze otevřít: " + ex.Message);
-            }
+            catch (Exception ex) { MessageBox.Show($"Error launching iVysilani: {ex.Message}"); }
         }
 
-        private bool IsiVysilaniAppRunning()
-        {
-            // Hledejte přímo okno podle titulku, ne přes process.MainWindowTitle
-            bool found = false;
-            EnumWindows((hWnd, lParam) =>
-            {
-                if (!IsWindowVisible(hWnd)) return true;
-
-                var sb = new StringBuilder(512);
-                GetWindowText(hWnd, sb, sb.Capacity);
-                string title = sb.ToString();
-
-                if (title.IndexOf("iVysílání", StringComparison.OrdinalIgnoreCase) >= 0)
-                {
-                    // Volitelně ověřit, že okno patří procesu "brave"
-                    GetWindowThreadProcessId(hWnd, out var pid);
-                    try
-                    {
-                        var p = Process.GetProcessById((int)pid);
-                        if (!p.HasExited && p.ProcessName.Equals("brave", StringComparison.OrdinalIgnoreCase))
-                        {
-                            ShowWindow(hWnd, SW_MAXIMIZE);
-                            SetForegroundWindow(hWnd);
-                            found = true;
-                            return false;
-                        }
-                    }
-                    catch { }
-                }
-                return true;
-            }, IntPtr.Zero);
-
-            return found;
-        }
 
         // Internet
-        private void InternetButton_Click(object sender, RoutedEventArgs e)
+        private async void InternetButton_Click(object sender, RoutedEventArgs e)
         {
             try
             {
-                if (!IsInternetRunning())
-                {
-                    Process.Start(new ProcessStartInfo
-                    {
-                        FileName = "brave",
-                        UseShellExecute = true,
-                    });
-                }
+                await _appLauncher.LaunchAppAsync(_appInternet);
                 currentPage = "Brave";
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Internet nelze otevřít: " + ex.Message);
-            }
-        }
-
-        private bool IsInternetRunning()
-        {
-            // Hledejte přímo okno podle titulku, ne přes process.MainWindowTitle
-            bool found = false;
-            EnumWindows((hWnd, lParam) =>
-            {
-                if (!IsWindowVisible(hWnd)) return true;
-
-                var sb = new StringBuilder(512);
-                GetWindowText(hWnd, sb, sb.Capacity);
-                string title = sb.ToString();
-
-                if (title.IndexOf("Brave", StringComparison.OrdinalIgnoreCase) >= 0
-                    && title.IndexOf("YouTube", StringComparison.OrdinalIgnoreCase) < 0
-                    && title.IndexOf("bombuj", StringComparison.OrdinalIgnoreCase) < 0
-                    && title.IndexOf("iVysílání", StringComparison.OrdinalIgnoreCase) < 0)
-                {
-                    // Volitelně ověřit, že okno patří procesu "brave"
-                    GetWindowThreadProcessId(hWnd, out var pid);
-                    try
-                    {
-                        var p = Process.GetProcessById((int)pid);
-                        if (!p.HasExited && p.ProcessName.Equals("brave", StringComparison.OrdinalIgnoreCase))
-                        {
-                            ShowWindow(hWnd, SW_MAXIMIZE);
-                            SetForegroundWindow(hWnd);
-                            found = true;
-                            return false;
-                        }
-                    }
-                    catch { }
-                }
-                return true;
-            }, IntPtr.Zero);
-
-            return found;
-        }
-
-
-        private async Task MaximizeWindowByTitle(string AppName, int timeoutMs = 5000)
-        {
-            await Task.Run(() =>
-            {
-                const int intervalMs = 100;
-                int waited = 0;
-                while (waited < timeoutMs)
-                {
-                    EnumWindows((hWnd, lParam) =>
-                    {
-                        var sb = new StringBuilder(256);
-                        GetWindowText(hWnd, sb, sb.Capacity);
-                        if (sb.ToString().Contains(AppName) && IsWindowVisible(hWnd))
-                        {
-                            ShowWindow(hWnd, SW_MAXIMIZE);
-                            SetForegroundWindow(hWnd);
-                            return false;
-                        }
-                        return true;
-                    }, IntPtr.Zero);
-                    Thread.Sleep(intervalMs);
-                    waited += intervalMs;
-                }
-            });
-        }
-
-        private async Task SendF11ToWindow(string AppName)
-        {
-            IntPtr targetHwnd = IntPtr.Zero;
-            const int intervalMs = 100;
-            int waited = 0;
-            while (targetHwnd == IntPtr.Zero && waited < 5000)
-            {
-                EnumWindows((hWnd, lParam) =>
-                {
-                    var sb = new StringBuilder(256);
-                    GetWindowText(hWnd, sb, sb.Capacity);
-                    if (sb.ToString().Contains(AppName) && IsWindowVisible(hWnd))
-                    {
-                        targetHwnd = hWnd;
-                        return false;
-                    }
-                    return true;
-                }, IntPtr.Zero);
-
-                await Task.Delay(intervalMs);
-                waited += intervalMs;
-            }
-
-            if (targetHwnd != IntPtr.Zero)
-            {
-                PostMessage(targetHwnd, WM_KEYDOWN, (IntPtr)VK_F11, IntPtr.Zero);
-                PostMessage(targetHwnd, WM_KEYUP, (IntPtr)VK_F11, IntPtr.Zero);
-            }
-        }
-
-        private bool IsWindowFullscreen(string AppName)
-        {
-            IntPtr targetHwnd = IntPtr.Zero;
-            EnumWindows((hWnd, lParam) =>
-            {
-                var sb = new StringBuilder(256);
-                GetWindowText(hWnd, sb, sb.Capacity);
-                if (sb.ToString().Contains(AppName) && IsWindowVisible(hWnd))
-                {
-                    targetHwnd = hWnd;
-                    return false;
-                }
-                return true;
-            }, IntPtr.Zero);
-
-            if (!IsWindowVisible(targetHwnd)) return false;
-            GetWindowRect(targetHwnd, out RECT rect);
-
-            double screenWidth = SystemParameters.PrimaryScreenWidth;
-            double screenHeight = SystemParameters.PrimaryScreenHeight;
-            int width = rect.Right - rect.Left;
-            int height = rect.Bottom - rect.Top;
-
-            return rect.Left <= 0 &&
-                   rect.Top <= 0 &&
-                   width >= (int)screenWidth &&
-                   height >= (int)screenHeight;
+            catch (Exception ex) { MessageBox.Show($"Error launching Internet: {ex.Message}"); }
         }
     }
 }
