@@ -14,8 +14,10 @@ using dumbTV.Services;
 using Fleck;
 using NAudio.CoreAudioApi;
 using NAudio.CoreAudioApi.Interfaces;
-using System;
-using System.Collections.Generic;
+using System.Net;
+using System.Net.Sockets;
+using System.Net.NetworkInformation;
+using System.Text;
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Input;
@@ -369,8 +371,6 @@ namespace dumbTV
 
         #region Event Handlers - App Launching
 
-        // NOTE: All handlers are 'async void' to support await within WPF event handlers.
-
         private async void YouTubeButton_Click(object sender, RoutedEventArgs e)
         {
             try
@@ -419,6 +419,65 @@ namespace dumbTV
                 currentPage = "Brave";
             }
             catch (Exception ex) { MessageBox.Show($"Error launching Internet: {ex.Message}"); }
+        }
+
+        /// <summary>
+        /// Handles the click event for the Settings/IP button.
+        /// Attempts to find the single most relevant IPv4 address of the main network adapter.
+        /// </summary>
+        /// <param name="sender">The source of the event (the Button).</param>
+        /// <param name="e">Event data.</param>
+        private void IpInfoButton_Click(object sender, RoutedEventArgs e)
+        {
+            string bestIpAddress = "Nenalezeno (Not Found)";
+            bool found = false;
+
+            try
+            {
+                // Iterate over all network interfaces (adapters) on the machine
+                foreach (NetworkInterface nic in NetworkInterface.GetAllNetworkInterfaces())
+                {
+                    // Filter out interfaces that are not active (Up) or are loopback adapters (localhost)
+                    if (nic.OperationalStatus != OperationalStatus.Up || nic.NetworkInterfaceType == NetworkInterfaceType.Loopback)
+                        continue;
+
+                    // Get IP properties for this adapter
+                    var ipProps = nic.GetIPProperties();
+
+                    // Filter out virtual adapters without a gateway (often Docker/VMware)
+                    // An adapter connected to a real network usually has a gateway.
+                    if (ipProps.GatewayAddresses.Count == 0)
+                        continue;
+
+                    // Find the IPv4 address on this adapter
+                    foreach (UnicastIPAddressInformation ip in ipProps.UnicastAddresses)
+                    {
+                        if (ip.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+                        {
+                            bestIpAddress = ip.Address.ToString();
+                            found = true;
+                            // We found a good candidate, break out of both loops
+                            goto FoundLabel;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                bestIpAddress = "Chyba: " + ex.Message;
+            }
+
+        FoundLabel:
+
+            var sb = new StringBuilder();
+            sb.AppendLine("IP adresa pro připojení ovladače:");
+            sb.AppendLine();
+            sb.AppendLine($"👉 {bestIpAddress}");
+            sb.AppendLine();
+            sb.AppendLine("Port: 8080");
+
+            MessageBoxImage icon = found ? MessageBoxImage.Information : MessageBoxImage.Warning;
+            MessageBox.Show(sb.ToString(), "Nastavení připojení", MessageBoxButton.OK, icon);
         }
 
         #endregion

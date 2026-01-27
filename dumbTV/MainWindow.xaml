@@ -54,24 +54,16 @@
                                 <Trigger.EnterActions>
                                     <BeginStoryboard>
                                         <Storyboard>
-                                            <DoubleAnimation Storyboard.TargetName="scaleTransform"
-                                                             Storyboard.TargetProperty="ScaleX"
-                                                             To="1.1" Duration="0:0:0.1"/>
-                                            <DoubleAnimation Storyboard.TargetName="scaleTransform"
-                                                             Storyboard.TargetProperty="ScaleY"
-                                                             To="1.1" Duration="0:0:0.1"/>
+                                            <DoubleAnimation Storyboard.TargetName="scaleTransform" Storyboard.TargetProperty="ScaleX" To="1.1" Duration="0:0:0.1"/>
+                                            <DoubleAnimation Storyboard.TargetName="scaleTransform" Storyboard.TargetProperty="ScaleY" To="1.1" Duration="0:0:0.1"/>
                                         </Storyboard>
                                     </BeginStoryboard>
                                 </Trigger.EnterActions>
                                 <Trigger.ExitActions>
                                     <BeginStoryboard>
                                         <Storyboard>
-                                            <DoubleAnimation Storyboard.TargetName="scaleTransform"
-                                                             Storyboard.TargetProperty="ScaleX"
-                                                             To="1.0" Duration="0:0:0.1"/>
-                                            <DoubleAnimation Storyboard.TargetName="scaleTransform"
-                                                             Storyboard.TargetProperty="ScaleY"
-                                                             To="1.0" Duration="0:0:0.1"/>
+                                            <DoubleAnimation Storyboard.TargetName="scaleTransform" Storyboard.TargetProperty="ScaleX" To="1.0" Duration="0:0:0.1"/>
+                                            <DoubleAnimation Storyboard.TargetName="scaleTransform" Storyboard.TargetProperty="ScaleY" To="1.0" Duration="0:0:0.1"/>
                                         </Storyboard>
                                     </BeginStoryboard>
                                 </Trigger.ExitActions>
@@ -87,24 +79,16 @@
                                 <MultiTrigger.EnterActions>
                                     <BeginStoryboard>
                                         <Storyboard>
-                                            <DoubleAnimation Storyboard.TargetName="scaleTransform"
-                                                             Storyboard.TargetProperty="ScaleX"
-                                                             To="1.1" Duration="0:0:0.1"/>
-                                            <DoubleAnimation Storyboard.TargetName="scaleTransform"
-                                                             Storyboard.TargetProperty="ScaleY"
-                                                             To="1.1" Duration="0:0:0.1"/>
+                                            <DoubleAnimation Storyboard.TargetName="scaleTransform" Storyboard.TargetProperty="ScaleX" To="1.1" Duration="0:0:0.1"/>
+                                            <DoubleAnimation Storyboard.TargetName="scaleTransform" Storyboard.TargetProperty="ScaleY" To="1.1" Duration="0:0:0.1"/>
                                         </Storyboard>
                                     </BeginStoryboard>
                                 </MultiTrigger.EnterActions>
                                 <MultiTrigger.ExitActions>
                                     <BeginStoryboard>
                                         <Storyboard>
-                                            <DoubleAnimation Storyboard.TargetName="scaleTransform"
-                                                             Storyboard.TargetProperty="ScaleX"
-                                                             To="1.0" Duration="0:0:0.1"/>
-                                            <DoubleAnimation Storyboard.TargetName="scaleTransform"
-                                                             Storyboard.TargetProperty="ScaleY"
-                                                             To="1.0" Duration="0:0:0.1"/>
+                                            <DoubleAnimation Storyboard.TargetName="scaleTransform" Storyboard.TargetProperty="ScaleX" To="1.0" Duration="0:0:0.1"/>
+                                            <DoubleAnimation Storyboard.TargetName="scaleTransform" Storyboard.TargetProperty="ScaleY" To="1.0" Duration="0:0:0.1"/>
                                         </Storyboard>
                                     </BeginStoryboard>
                                 </MultiTrigger.ExitActions>
@@ -143,61 +127,53 @@
                         Margin="0,-50,0,0">
 
                 <StackPanel Style="{StaticResource AppContainerStyle}">
-                    <Button x:Name="YouTubeButton"
-                            Style="{StaticResource IconButtonStyle}"
-                            Width="250" Height="250"
-                            Background="{StaticResource YouTubeBrush}"
-                            Click="YouTubeButton_Click"
-                            ClickMode="Press"
-                            Cursor="None"/>
+                    <Button x:Name="YouTubeButton" Style="{StaticResource IconButtonStyle}"
+                            Width="250" Height="250" Background="{StaticResource YouTubeBrush}"
+                            Click="YouTubeButton_Click" ClickMode="Press" Cursor="None"/>
                     <TextBlock Text="YouTube" Style="{StaticResource AppLabelStyle}"/>
                 </StackPanel>
 
                 <StackPanel Style="{StaticResource AppContainerStyle}">
-                    <Button x:Name="VLCButton"
-                            Style="{StaticResource IconButtonStyle}"
-                            Width="250" Height="250"
-                            Background="{StaticResource VLCBrush}"
-                            Click="VLCButton_Click"
-                            ClickMode="Press"
-                            Cursor="None"/>
+                    <Button x:Name="VLCButton" Style="{StaticResource IconButtonStyle}"
+                            Width="250" Height="250" Background="{StaticResource VLCBrush}"
+                            Click="VLCButton_Click" ClickMode="Press" Cursor="None"/>
                     <TextBlock Text="VLC" Style="{StaticResource AppLabelStyle}"/>
                 </StackPanel>
 
                 <StackPanel Style="{StaticResource AppContainerStyle}">
-                    <Button x:Name="BombujButton"
-                            Style="{StaticResource IconButtonStyle}"
-                            Width="250" Height="250"
-                            Background="{StaticResource BombujBrush}"
-                            Click="BombujButton_Click"
-                            ClickMode="Press"
-                            Cursor="None"/>
+                    <Button x:Name="BombujButton" Style="{StaticResource IconButtonStyle}"
+                            Width="250" Height="250" Background="{StaticResource BombujBrush}"
+                            Click="BombujButton_Click" ClickMode="Press" Cursor="None"/>
                     <TextBlock Text="Bombuj" Style="{StaticResource AppLabelStyle}"/>
                 </StackPanel>
 
                 <StackPanel Style="{StaticResource AppContainerStyle}">
-                    <Button x:Name="iVysilaniButton"
-                            Style="{StaticResource IconButtonStyle}"
-                            Width="250" Height="250"
-                            Background="{StaticResource iVysilaniBrush}"
-                            Click="iVysilaniButton_Click"
-                            ClickMode="Press"
-                            Cursor="None"/>
+                    <Button x:Name="iVysilaniButton" Style="{StaticResource IconButtonStyle}"
+                            Width="250" Height="250" Background="{StaticResource iVysilaniBrush}"
+                            Click="iVysilaniButton_Click" ClickMode="Press" Cursor="None"/>
                     <TextBlock Text="iVysílání" Style="{StaticResource AppLabelStyle}"/>
                 </StackPanel>
 
                 <StackPanel Style="{StaticResource AppContainerStyle}">
-                    <Button x:Name="InternetButton"
-                            Style="{StaticResource IconButtonStyle}"
-                            Width="250" Height="250"
-                            Background="{StaticResource InternetBrush}"
-                            Click="InternetButton_Click"
-                            ClickMode="Press"
-                            Cursor="None"/>
+                    <Button x:Name="InternetButton" Style="{StaticResource IconButtonStyle}"
+                            Width="250" Height="250" Background="{StaticResource InternetBrush}"
+                            Click="InternetButton_Click" ClickMode="Press" Cursor="None"/>
                     <TextBlock Text="Internet" Style="{StaticResource AppLabelStyle}"/>
                 </StackPanel>
-
             </StackPanel>
+
+            <StackPanel HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="50,0,0,50">
+                <Button x:Name="IpInfoButton"
+                        Style="{StaticResource IconButtonStyle}"
+                        Width="100" Height="100"
+                        Background="#33FFFFFF" 
+                        Click="IpInfoButton_Click"
+                        ClickMode="Press"
+                        Cursor="None">
+                    <TextBlock Text="&#x2699;" Foreground="White" FontSize="60" FontWeight="Bold" Margin="0,-5,0,0"/>
+                </Button>
+            </StackPanel>
+
         </Grid>
     </Viewbox>
 </Window>
