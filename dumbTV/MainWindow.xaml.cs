@@ -15,50 +15,24 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Runtime.InteropServices;
 using static dumbTV.Core.NativeMethods;
+using dumbTV.Services;
 
 namespace dumbTV
 {
-    public static class GlobalCursor
-    {
-        public static void ApplyCustomCursor(string cursorFilePath)
-        {
-            uint[] ids = new uint[]
-            {
-                OCR_NORMAL, OCR_IBEAM, OCR_WAIT, OCR_CROSS, OCR_UP,
-                OCR_SIZE, OCR_ICON, OCR_SIZENWSE, OCR_SIZENESW,
-                OCR_SIZEWE, OCR_SIZENS, OCR_SIZEALL, OCR_NO,
-                OCR_HAND, OCR_APPSTARTING
-            };
-
-            foreach (var id in ids)
-            {
-                IntPtr hCursor = LoadCursorFromFile(cursorFilePath);
-                if (hCursor != IntPtr.Zero)
-                {
-                    SetSystemCursor(hCursor, id);
-                }
-            }
-        }
-
-
-        public static void RestoreDefaultCursors()
-        {
-            // obnoví všechny kurzory na výchozí Windows vzhled
-            SystemParametersInfo(0x57, 0, IntPtr.Zero, 0);
-        }
-    }
-
     public partial class MainWindow : Window
     {
         private WebSocketServer server;
         private string currentPage = "Home";
         private int lastInputType = 0;
 
+        private readonly CursorService _cursorService;
+
         public MainWindow()
         {
             InitializeComponent();
+            _cursorService = new CursorService();
             StartWebSocketServer();
-            GlobalCursor.ApplyCustomCursor("C:\\Users\\Radim Kopunec\\Desktop\\dumbTV\\dumbTV\\cursor.cur");
+            _cursorService.ApplyCustomCursor("C:\\Users\\Radim Kopunec\\Desktop\\dumbTV\\dumbTV\\cursor.cur");
         }
 
         private void StartWebSocketServer()
@@ -81,7 +55,7 @@ namespace dumbTV
 
         protected override void OnClosed(EventArgs e)
         {
-            GlobalCursor.RestoreDefaultCursors();
+            _cursorService.RestoreDefaultCursors();
             base.OnClosed(e);
         }
 
@@ -699,98 +673,8 @@ namespace dumbTV
             lastInputType = 2;
         }
 
-        // Keyboard input
-        [StructLayout(LayoutKind.Sequential)]
-        struct INPUT { public uint type; public InputUnion U; }
+        
 
-        [StructLayout(LayoutKind.Explicit)]
-        struct InputUnion { [FieldOffset(0)] public KEYBDINPUT ki; }
-
-        [StructLayout(LayoutKind.Sequential)]
-        struct KEYBDINPUT
-        {
-            public ushort wVk;
-            public ushort wScan;
-            public uint dwFlags;
-            public uint time;
-            public UIntPtr dwExtraInfo;
-        }
-
-        [DllImport("user32.dll", SetLastError = true)]
-        static extern uint SendInput(uint nInputs, INPUT[] pInputs, int cbSize);
-
-        const uint INPUT_KEYBOARD = 1;
-        const uint KEYEVENTF_UNICODE = 0x0004;
-        const uint KEYEVENTF_KEYUP = 0x0002;
-
-    ////// Vyžaduje certifikát a uiAcces="true" (zatím nebudu řešit)
-        /*public void SendChar(char c)
-        {
-            INPUT[] inputs = new INPUT[]
-            {
-                new INPUT
-                {
-                    type = INPUT_KEYBOARD,
-                    U = new InputUnion
-                    {
-                        ki = new KEYBDINPUT
-                        {
-                            wVk     = 0,
-                            wScan   = c,
-                            dwFlags = KEYEVENTF_UNICODE
-                        }
-                    }
-                },
-                new INPUT
-                {
-                    type = INPUT_KEYBOARD,
-                    U = new InputUnion
-                    {
-                        ki = new KEYBDINPUT
-                        {
-                            wVk     = 0,
-                            wScan   = c,
-                            dwFlags = KEYEVENTF_UNICODE | KEYEVENTF_KEYUP
-                        }
-                    }
-                }
-            };
-            SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<INPUT>());
-        }
-
-        public void SendVk(int vk)
-        {
-            INPUT[] inputs = new INPUT[]
-            {
-                new INPUT
-                {
-                    type = INPUT_KEYBOARD,
-                    U = new InputUnion
-                    {
-                        ki = new KEYBDINPUT
-                        {
-                            wVk     = (ushort)vk,
-                            wScan   = 0,
-                            dwFlags = 0
-                        }
-                    }
-                },
-                new INPUT
-                {
-                    type = INPUT_KEYBOARD,
-                    U = new InputUnion
-                    {
-                        ki = new KEYBDINPUT
-                        {
-                            wVk     = (ushort)vk,
-                            wScan   = 0,
-                            dwFlags = KEYEVENTF_KEYUP
-                        }
-                    }
-                }
-            };
-            SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<INPUT>());
-        }*/
 
 
         public void SendChar(char c)
