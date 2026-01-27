@@ -23,14 +23,17 @@ namespace dumbTV
     {
         private WebSocketServer server;
         private string currentPage = "Home";
-        private int lastInputType = 0;
 
         private readonly CursorService _cursorService;
+        private readonly InputService _inputService;
 
         public MainWindow()
         {
             InitializeComponent();
+
             _cursorService = new CursorService();
+            _inputService = new InputService();
+
             StartWebSocketServer();
             _cursorService.ApplyCustomCursor("C:\\Users\\Radim Kopunec\\Desktop\\dumbTV\\dumbTV\\cursor.cur");
         }
@@ -89,34 +92,42 @@ namespace dumbTV
             Dispatcher.Invoke(() =>
             {
                 if (cmd == "CLICK:MOUSELEFT")
-                    MouseLeftClick();
+                {
+                    // Logic: If we were using keyboard/remote (2) or are on Home screen, act as ENTER key.
+                    // Otherwise act as Mouse Click.
+                    if (_inputService.LastInputType == 2 || currentPage == "Home")
+                    {
+                        _inputService.SendKey(VK_RETURN);
+                    }
+                    else
+                    {
+                        _inputService.MouseLeftClick();
+                    }
+                }
                 else if (cmd == "CLICK:MOUSERIGHT")
-                    MouseRightClick();
+                    _inputService.MouseRightClick();
                 else if (cmd == "CLICK:UP")
-                    UpClick();
+                    _inputService.SendKey(VK_UP);
                 else if (cmd == "CLICK:DOWN")
-                    DownClick();
+                    _inputService.SendKey(VK_DOWN);
                 else if (cmd == "CLICK:LEFT")
-                    LeftClick();
+                    _inputService.SendKey(VK_LEFT);
                 else if (cmd == "CLICK:RIGHT")
-                    RightClick();
+                    _inputService.SendKey(VK_RIGHT);
                 else if (cmd == "CLICK:BACK")
-                    SendVk(VK_BROWSER_BACK);
+                    _inputService.SendKey(VK_BROWSER_BACK);
                 else if (cmd == "CLICK:HOME")
                     GoHome();
                 else if (cmd == "CLICK:MUTE")
-                    SendVk(VK_VOLUME_MUTE);
+                    _inputService.SendKey(VK_VOLUME_MUTE);
                 else if (cmd == "CLICK:VOLDOWN")
-                    SendVk(VK_VOLUME_DOWN);
+                    _inputService.SendKey(VK_VOLUME_DOWN);
                 else if (cmd == "CLICK:VOLUP")
-                    SendVk(VK_VOLUME_UP);
+                    _inputService.SendKey(VK_VOLUME_UP);
                 else if (cmd == "BACKSPACE")
-                {
-                    keybd_event(VK_BACK, 0, 0, 0);
-                    keybd_event(VK_BACK, 0, (int)KEYEVENTF_KEYUP, 0);
-                }
+                    _inputService.SendBackspace();
                 else if (cmd.StartsWith("TYPE:") && cmd.Length > 5)
-                    SendChar(cmd[5]);
+                    _inputService.SendChar(cmd[5]);
                 else if (cmd.StartsWith("MOVE:"))
                 {
                     var parts = cmd.Substring(5).Split(':');
@@ -124,7 +135,7 @@ namespace dumbTV
                         && int.TryParse(parts[0], out var dx)
                         && int.TryParse(parts[1], out var dy))
                     {
-                        MoveCursor(dx, dy);
+                        _inputService.MoveCursor(dx, dy);
                     }
                 }
             });
@@ -194,7 +205,7 @@ namespace dumbTV
                     if (!process.HasExited && process.MainWindowTitle.Contains("VLC"))
                     {
                         if (IsProcessPlayingAudio("vlc"))
-                            SendSpaceKeyToWindow(process.MainWindowHandle);
+                            _inputService.SendSpaceToWindow(process.MainWindowHandle);
                     }
                 }
                 catch { }
@@ -512,8 +523,6 @@ namespace dumbTV
         }
 
 
-        //
-
         private async Task MaximizeWindowByTitle(string AppName, int timeoutMs = 5000)
         {
             await Task.Run(() =>
@@ -597,125 +606,6 @@ namespace dumbTV
                    rect.Top <= 0 &&
                    width >= (int)screenWidth &&
                    height >= (int)screenHeight;
-        }
-
-
-        public void MoveCursor(int dx, int dy)
-        {
-            GetCursorPos(out var p);
-            SetCursorPos(p.X + dx, p.Y + dy);
-            lastInputType = 1;
-        }
-
-        public void MouseLeftClick()
-        {
-            if (lastInputType == 2 || currentPage == "Home")
-            {
-                keybd_event(VK_RETURN, 0, 0, 0);
-                keybd_event(VK_RETURN, 0, (int)KEYEVENTF_KEYUP, 0);
-            }
-            else
-            {
-                GetCursorPos(out var p);
-                mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, p.X, p.Y, 0, UIntPtr.Zero);
-            }
-        }
-
-        public void MouseRightClick()
-        {
-            GetCursorPos(out var p);
-            mouse_event(MOUSEEVENTF_RIGHTDOWN | MOUSEEVENTF_RIGHTUP, p.X, p.Y, 0, UIntPtr.Zero);
-        }
-
-
-        public void UpClick()
-        {
-            //if (currentPage == "Home" || currentPage == "VLC")
-            {
-                keybd_event(VK_UP, 0, 0, 0);
-                keybd_event(VK_UP, 0, (int)KEYEVENTF_KEYUP, 0);
-            }
-            //else
-            //    MoveCursor(0, -20);
-            lastInputType = 2;
-        }
-        public void DownClick()
-        {
-            //if (currentPage == "Home" || currentPage == "VLC")
-            {
-                keybd_event(VK_DOWN, 0, 0, 0);
-                keybd_event(VK_DOWN, 0, (int)KEYEVENTF_KEYUP, 0);
-            }
-            //else
-            //    MoveCursor(0, 20);
-            lastInputType = 2;
-        }
-        public void LeftClick()
-        {
-            //if (currentPage == "Home" || currentPage == "VLC")
-            {
-                keybd_event(VK_LEFT, 0, 0, 0);
-                keybd_event(VK_LEFT, 0, (int)KEYEVENTF_KEYUP, 0);
-            }
-            //else
-            //    MoveCursor(-20, 0);
-            lastInputType = 2;
-        }
-        public void RightClick()
-        {
-            //if (currentPage == "Home" || currentPage == "VLC")
-            {
-                keybd_event(VK_RIGHT, 0, 0, 0);
-                keybd_event(VK_RIGHT, 0, (int)KEYEVENTF_KEYUP, 0);
-            }
-            //else
-            //    MoveCursor(20, 0);
-            lastInputType = 2;
-        }
-
-        
-
-
-
-        public void SendChar(char c)
-        {
-            short vk = VkKeyScan(c);
-            if (vk == -1) return; // znak nelze napsat přes aktuální layout
-
-            byte vkCode = (byte)(vk & 0xFF);
-            byte shiftState = (byte)((vk >> 8) & 0xFF);
-
-            // SHIFT
-            if ((shiftState & 1) != 0) keybd_event(0x10, 0, 0, 0);
-
-            // CTRL (nepoužívá se u běžných znaků, ale pro jistotu)
-            if ((shiftState & 2) != 0) keybd_event(0x11, 0, 0, 0);
-
-            // ALT
-            if ((shiftState & 4) != 0) keybd_event(0x12, 0, 0, 0);
-
-            // Znak
-            keybd_event(vkCode, 0, 0, 0);
-            keybd_event(vkCode, 0, (int)KEYEVENTF_KEYUP, 0);
-
-            // Uvolnit modifikátory
-            if ((shiftState & 4) != 0) keybd_event(0x12, 0, (int)KEYEVENTF_KEYUP, 0);
-            if ((shiftState & 2) != 0) keybd_event(0x11, 0, (int)KEYEVENTF_KEYUP, 0);
-            if ((shiftState & 1) != 0) keybd_event(0x10, 0, (int)KEYEVENTF_KEYUP, 0);
-        }
-
-        public void SendVk(int vk)
-        {
-            keybd_event((byte)vk, 0, 0, (int)UIntPtr.Zero);
-            keybd_event((byte)vk, 0, (int)KEYEVENTF_KEYUP, (int)UIntPtr.Zero);
-        }
-
-
-        private void SendSpaceKeyToWindow(IntPtr hWnd)
-        {
-            if (hWnd == IntPtr.Zero) return;
-            PostMessage(hWnd, WM_KEYDOWN, (IntPtr)VK_SPACE, IntPtr.Zero);
-            PostMessage(hWnd, WM_KEYUP, (IntPtr)VK_SPACE, IntPtr.Zero);
         }
     }
 }
