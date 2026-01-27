@@ -9,6 +9,7 @@
         AllowsTransparency="False"
         WindowStyle="None"
         WindowStartupLocation="CenterScreen" Icon="/dumbTVlogo.png">
+
     <Window.Background>
         <LinearGradientBrush x:Name="bgGradient" StartPoint="0,0" EndPoint="1,1">
             <GradientStop x:Name="gradientStop1" Color="#FF1E1E1E" Offset="0"/>
@@ -22,6 +23,7 @@
         <ImageBrush x:Key="BombujBrush"     ImageSource="bombujlogo.png" Stretch="Fill"/>
         <ImageBrush x:Key="iVysilaniBrush"  ImageSource="ivysilanilogo.png" Stretch="Fill"/>
         <ImageBrush x:Key="InternetBrush"   ImageSource="bravelogo.png" Stretch="Fill"/>
+
         <Style x:Key="IconButtonStyle" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="BorderBrush" Value="Transparent"/>
@@ -73,7 +75,6 @@
                                         </Storyboard>
                                     </BeginStoryboard>
                                 </Trigger.ExitActions>
-
                                 <Setter TargetName="border" Property="BorderBrush" Value="White"/>
                                 <Setter TargetName="border" Property="BorderThickness" Value="7"/>
                             </Trigger>
@@ -87,11 +88,11 @@
                                     <BeginStoryboard>
                                         <Storyboard>
                                             <DoubleAnimation Storyboard.TargetName="scaleTransform"
-                                 Storyboard.TargetProperty="ScaleX"
-                                 To="1.1" Duration="0:0:0.1"/>
+                                                             Storyboard.TargetProperty="ScaleX"
+                                                             To="1.1" Duration="0:0:0.1"/>
                                             <DoubleAnimation Storyboard.TargetName="scaleTransform"
-                                 Storyboard.TargetProperty="ScaleY"
-                                 To="1.1" Duration="0:0:0.1"/>
+                                                             Storyboard.TargetProperty="ScaleY"
+                                                             To="1.1" Duration="0:0:0.1"/>
                                         </Storyboard>
                                     </BeginStoryboard>
                                 </MultiTrigger.EnterActions>
@@ -99,11 +100,11 @@
                                     <BeginStoryboard>
                                         <Storyboard>
                                             <DoubleAnimation Storyboard.TargetName="scaleTransform"
-                                 Storyboard.TargetProperty="ScaleX"
-                                 To="1.0" Duration="0:0:0.1"/>
+                                                             Storyboard.TargetProperty="ScaleX"
+                                                             To="1.0" Duration="0:0:0.1"/>
                                             <DoubleAnimation Storyboard.TargetName="scaleTransform"
-                                 Storyboard.TargetProperty="ScaleY"
-                                 To="1.0" Duration="0:0:0.1"/>
+                                                             Storyboard.TargetProperty="ScaleY"
+                                                             To="1.0" Duration="0:0:0.1"/>
                                         </Storyboard>
                                     </BeginStoryboard>
                                 </MultiTrigger.ExitActions>
@@ -115,73 +116,87 @@
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <Style x:Key="AppContainerStyle" TargetType="StackPanel">
+            <Setter Property="HorizontalAlignment" Value="Left"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="57,0,57,0"/>
+        </Style>
+
+        <Style x:Key="AppLabelStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="40"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="0,10,0,0"/>
+        </Style>
+
     </Window.Resources>
-    
+
     <Viewbox Stretch="Uniform">
-        <Grid Width="1920" Height="1080" KeyboardNavigation.DirectionalNavigation="Cycle" KeyboardNavigation.TabNavigation="Cycle">
-            <!-- YouTube -->
-            <StackPanel HorizontalAlignment="Left" VerticalAlignment="Center" Margin="105,-50,0,0">
-                <Button x:Name="YouTubeButton"
-                        Style="{StaticResource IconButtonStyle}"
-                        Width="250" Height="250"
-                        Background="{StaticResource YouTubeBrush}"
-                        Click="YouTubeButton_Click"
-                        ClickMode="Press"
-                        Cursor="None"/>
-                <TextBlock Text="YouTube" Foreground="White"
-                           FontSize="40" HorizontalAlignment="Center" Margin="0,10,0,0"/>
-            </StackPanel>
+        <Grid Width="1920" Height="1080" 
+              KeyboardNavigation.DirectionalNavigation="Cycle" 
+              KeyboardNavigation.TabNavigation="Cycle">
 
-            <!-- VLC -->
-            <StackPanel HorizontalAlignment="Left" VerticalAlignment="Center" Margin="470,-50,0,0">
-                <Button x:Name="VLCButton"
-                        Style="{StaticResource IconButtonStyle}"
-                        Width="250" Height="250"
-                        Background="{StaticResource VLCBrush}"
-                        Click="VLCButton_Click"
-                        ClickMode="Press"
-                        Cursor="None"/>
-                <TextBlock Text="VLC" Foreground="White"
-                           FontSize="40" HorizontalAlignment="Center" Margin="0,10,0,0"/>
-            </StackPanel>
-            
-            <!-- Bombuj -->
-            <StackPanel HorizontalAlignment="Left" VerticalAlignment="Center" Margin="835,-50,0,0">
-                <Button x:Name="BombujButton"
-                        Style="{StaticResource IconButtonStyle}"
-                        Width="250" Height="250"
-                        Background="{StaticResource BombujBrush}"
-                        Click="BombujButton_Click"
-                        ClickMode="Press"
-                        Cursor="None"/>
-                <TextBlock Text="Bombuj" Foreground="White"
-                           FontSize="40" HorizontalAlignment="Center" Margin="0,10,0,0"/>
-            </StackPanel>
+            <StackPanel Orientation="Horizontal" 
+                        HorizontalAlignment="Center" 
+                        VerticalAlignment="Center"
+                        Margin="0,-50,0,0">
 
-            <!-- iVysilani -->
-            <StackPanel HorizontalAlignment="Left" VerticalAlignment="Center" Margin="1200,-50,0,0">
-                <Button x:Name="iVysilaniButton"
-                        Style="{StaticResource IconButtonStyle}"
-                        Width="250" Height="250"
-                        Background="{StaticResource iVysilaniBrush}"
-                        Click="iVysilaniButton_Click"
-                        ClickMode="Press"
-                        Cursor="None"/>
-                <TextBlock Text="iVysílání" Foreground="White"
-                           FontSize="40" HorizontalAlignment="Center" Margin="0,10,0,0"/>
-            </StackPanel>
+                <StackPanel Style="{StaticResource AppContainerStyle}">
+                    <Button x:Name="YouTubeButton"
+                            Style="{StaticResource IconButtonStyle}"
+                            Width="250" Height="250"
+                            Background="{StaticResource YouTubeBrush}"
+                            Click="YouTubeButton_Click"
+                            ClickMode="Press"
+                            Cursor="None"/>
+                    <TextBlock Text="YouTube" Style="{StaticResource AppLabelStyle}"/>
+                </StackPanel>
 
-            <!-- Internet -->
-            <StackPanel HorizontalAlignment="Left" VerticalAlignment="Center" Margin="1565,-50,0,0">
-                <Button x:Name="InternetButton"
-                        Style="{StaticResource IconButtonStyle}"
-                        Width="250" Height="250"
-                        Background="{StaticResource InternetBrush}"
-                        Click="InternetButton_Click"
-                        ClickMode="Press"
-                        Cursor="None"/> 
-                <TextBlock Text="Internet" Foreground="White"
-                           FontSize="40" HorizontalAlignment="Center" Margin="0,10,0,0"/>
+                <StackPanel Style="{StaticResource AppContainerStyle}">
+                    <Button x:Name="VLCButton"
+                            Style="{StaticResource IconButtonStyle}"
+                            Width="250" Height="250"
+                            Background="{StaticResource VLCBrush}"
+                            Click="VLCButton_Click"
+                            ClickMode="Press"
+                            Cursor="None"/>
+                    <TextBlock Text="VLC" Style="{StaticResource AppLabelStyle}"/>
+                </StackPanel>
+
+                <StackPanel Style="{StaticResource AppContainerStyle}">
+                    <Button x:Name="BombujButton"
+                            Style="{StaticResource IconButtonStyle}"
+                            Width="250" Height="250"
+                            Background="{StaticResource BombujBrush}"
+                            Click="BombujButton_Click"
+                            ClickMode="Press"
+                            Cursor="None"/>
+                    <TextBlock Text="Bombuj" Style="{StaticResource AppLabelStyle}"/>
+                </StackPanel>
+
+                <StackPanel Style="{StaticResource AppContainerStyle}">
+                    <Button x:Name="iVysilaniButton"
+                            Style="{StaticResource IconButtonStyle}"
+                            Width="250" Height="250"
+                            Background="{StaticResource iVysilaniBrush}"
+                            Click="iVysilaniButton_Click"
+                            ClickMode="Press"
+                            Cursor="None"/>
+                    <TextBlock Text="iVysílání" Style="{StaticResource AppLabelStyle}"/>
+                </StackPanel>
+
+                <StackPanel Style="{StaticResource AppContainerStyle}">
+                    <Button x:Name="InternetButton"
+                            Style="{StaticResource IconButtonStyle}"
+                            Width="250" Height="250"
+                            Background="{StaticResource InternetBrush}"
+                            Click="InternetButton_Click"
+                            ClickMode="Press"
+                            Cursor="None"/>
+                    <TextBlock Text="Internet" Style="{StaticResource AppLabelStyle}"/>
+                </StackPanel>
+
             </StackPanel>
         </Grid>
     </Viewbox>
