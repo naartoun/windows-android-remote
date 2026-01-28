@@ -12,7 +12,7 @@ using Android.OS;
 using Android.Views;
 #endif
 
-namespace MauiApp1
+namespace dumbRemote
 {
     public static class MauiProgram
     {

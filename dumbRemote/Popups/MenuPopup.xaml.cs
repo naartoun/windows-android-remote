@@ -2,7 +2,7 @@ using System;
 using CommunityToolkit.Maui.Views;
 using Microsoft.Maui.Controls;  // pro LoadFromXaml
 
-namespace MauiApp1.Popups
+namespace dumbRemote.Popups
 {
     public partial class MenuPopup : Popup
     {

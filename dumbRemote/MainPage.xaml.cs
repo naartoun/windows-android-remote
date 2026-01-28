@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.Maui.Controls;
 using CommunityToolkit.Maui.Core;
 using CommunityToolkit.Maui.Views;
-using MauiApp1.Popups;
+using dumbRemote.Popups;
 using Microsoft.Maui.Controls.Platform;
 using Microsoft.Maui.ApplicationModel;
 using System.Numerics;
@@ -20,7 +20,7 @@ using UIKit;
 #endif
 
 
-namespace MauiApp1
+namespace dumbRemote
 {
     public partial class MainPage : ContentPage
     {
@@ -89,8 +89,7 @@ namespace MauiApp1
             {
                 try
                 {
-                    //toto je moje tady ip await wsClient.ConnectAsync("ws://192.168.2.145:8080/ws/");
-                    await wsClient.ConnectAsync("ws://192.168.0.83:8080/ws/"); //toto je ip na dumbPC notebook
+                    await wsClient.ConnectAsync("ws://192.168.0.83:8080/ws/");
                     isConnected = true;
                     ConnectButton.Text = "Připojeno";
                     ConnectButton.BackgroundColor = Colors.LightGreen;

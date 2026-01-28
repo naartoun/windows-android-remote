@@ -2,7 +2,7 @@ using System;
 using Microsoft.Maui;
 using Microsoft.Maui.Hosting;
 
-namespace MauiApp1
+namespace dumbRemote
 {
     internal class Program : MauiApplication
     {

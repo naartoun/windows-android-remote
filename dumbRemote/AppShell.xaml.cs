@@ -1,4 +1,4 @@
-﻿namespace MauiApp1
+﻿namespace dumbRemote
 {
     public partial class AppShell : Shell
     {
