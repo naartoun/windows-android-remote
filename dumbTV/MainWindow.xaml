@@ -8,7 +8,7 @@
         Cursor="None"
         AllowsTransparency="False"
         WindowStyle="None"
-        WindowStartupLocation="CenterScreen" Icon="/dumbTVlogo.png">
+        WindowStartupLocation="CenterScreen" Icon="pack://application:,,,/dumbTVlogo.png">
 
     <Window.Background>
         <LinearGradientBrush x:Name="bgGradient" StartPoint="0,0" EndPoint="1,1">

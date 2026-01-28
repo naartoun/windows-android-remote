@@ -20,12 +20,12 @@ namespace dumbTV.Models
         /// <summary>
         /// Human-readable name of the application (e.g., "YouTube").
         /// </summary>
-        public string Name { get; set; }
+        public required string Name { get; set; }
 
         /// <summary>
         /// Absolute path to the executable file or the command (e.g., "brave" or "C:\...\vlc.exe").
         /// </summary>
-        public string ExecutablePath { get; set; }
+        public required string ExecutablePath { get; set; }
 
         /// <summary>
         /// Command-line arguments passed to the executable (e.g., "--app=https://youtube.com").
@@ -36,7 +36,7 @@ namespace dumbTV.Models
         /// A substring that MUST appear in the window title to identify the running application.
         /// Used to check if the app is already running (Single Instance).
         /// </summary>
-        public string WindowTitleKeyword { get; set; }
+        public required string WindowTitleKeyword { get; set; }
 
         /// <summary>
         /// A list of substrings that MUST NOT appear in the window title.

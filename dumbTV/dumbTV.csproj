@@ -10,12 +10,19 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="cursor.cur" />
     <None Remove="dumbTVlogo.png" />
     <None Remove="vlclogo.png" />
+    <None Remove="ytlogo.jpg" />
     <None Remove="ytlogo.png" />
     <None Remove="bombujlogo.png" />
     <None Remove="ivysilanilogo.png" />
     <None Remove="bravelogo.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="cursor.cur" />
+    <Resource Include="ytlogo.jpg" />
   </ItemGroup>
 
   <ItemGroup>

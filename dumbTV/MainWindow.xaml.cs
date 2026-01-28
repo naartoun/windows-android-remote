@@ -14,6 +14,8 @@ using dumbTV.Services;
 using Fleck;
 using NAudio.CoreAudioApi;
 using NAudio.CoreAudioApi.Interfaces;
+using System.IO;
+using System.Reflection;
 using System.Net;
 using System.Net.Sockets;
 using System.Net.NetworkInformation;
@@ -112,8 +114,9 @@ namespace dumbTV
             StartWebSocketServer();
 
             // Apply custom cursor on startup
-            // TODO: Move path to configuration file
-            _cursorService.ApplyCustomCursor("C:\\Users\\Radim Kopunec\\Desktop\\dumbTV\\dumbTV\\cursor.cur");
+            string tempCursorPath = Path.Combine(Path.GetTempPath(), "dumbTV_cursor.cur");
+            ExtractResource("dumbTV.cursor.cur", tempCursorPath);
+            _cursorService.ApplyCustomCursor(tempCursorPath);
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -121,6 +124,23 @@ namespace dumbTV
             // Set initial focus and start background animation
             BombujButton.Focus();
             AnimateGradientMovement();
+        }
+
+        private void ExtractResource(string resourceName, string outputPath)
+        {
+            using (Stream stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(resourceName))
+            {
+                if (stream == null)
+                {
+                    MessageBox.Show($"Chyba: Resource '{resourceName}' nenalezen!");
+                    return;
+                }
+
+                using (FileStream fileStream = new FileStream(outputPath, FileMode.Create, FileAccess.Write))
+                {
+                    stream.CopyTo(fileStream);
+                }
+            }
         }
 
         #endregion
