@@ -5,6 +5,9 @@ using Microsoft.Maui.Controls.Hosting;
 using Microsoft.Maui.Hosting;
 using Microsoft.Maui.LifecycleEvents;
 using TvojeNamespace;
+using dumbRemote.Services;
+using dumbRemote.ViewModels;
+
 #if ANDROID
 using AndroidX.Core.View;
 using Android.Content.Res;
@@ -44,6 +47,17 @@ namespace dumbRemote
                     }));
             });
 #endif
+
+            builder.Services.AddSingleton<IWebSocketService, WebSocketService>();
+            builder.Services.AddTransient<MainViewModel>();
+            builder.Services.AddTransient<MainPage>();
+
+            Microsoft.Maui.Handlers.EntryHandler.Mapper.AppendToMapping("NoUnderline", (handler, view) =>
+            {
+#if ANDROID
+                handler.PlatformView.BackgroundTintList = Android.Content.Res.ColorStateList.ValueOf(Android.Graphics.Color.Transparent);
+#endif
+            });
 
 #if DEBUG
             builder.Logging.AddDebug();

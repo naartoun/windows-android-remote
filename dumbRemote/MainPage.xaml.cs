@@ -1,54 +1,58 @@
-﻿using System;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.Maui.Controls;
-using CommunityToolkit.Maui.Core;
-using CommunityToolkit.Maui.Views;
-using dumbRemote.Popups;
-using Microsoft.Maui.Controls.Platform;
-using Microsoft.Maui.ApplicationModel;
+﻿/*
+ * =========================================================================================
+ * File: MainPage.xaml.cs
+ * Namespace: dumbRemote
+ * Author: Radim Kopunec
+ * Description: Code-behind for the main UI.
+ * Handles specialized UI gestures (Touchpad, Hold-to-repeat) and delegates logic to ViewModel.
+ * =========================================================================================
+ */
+
 using System.Numerics;
+using dumbRemote.ViewModels;
+using Microsoft.Maui.ApplicationModel;
+using Microsoft.Maui.Controls.Platform;
 
 #if ANDROID
 using Android.App;
 using Android.Content;
-using global::Android.Views;
 using Android.Views.InputMethods;
 #elif IOS
 using UIKit;
 #endif
 
-
 namespace dumbRemote
 {
     public partial class MainPage : ContentPage
     {
-        public readonly WebSocketClient wsClient = new WebSocketClient();
-        bool isConnected;
-        CancellationTokenSource upCts, downCts, leftCts, rightCts, moveCts;
+        // Reference to the ViewModel (Logic)
+        private readonly MainViewModel _viewModel;
 
-        Point touchpadCenter;
-        Point panStart;
-        double knobStartX, knobStartY;
-        double maxKnobDistance;
-        bool knobGrabbed = false;
+        // --- Touchpad State Variables ---
+        private CancellationTokenSource? _repeatCts;
+        private Point _touchpadCenter;
+        private double _knobStartX, _knobStartY;
+        private double _maxKnobDistance;
+        private bool _knobGrabbed = false;
+        private CancellationTokenSource? _moveLoopCts;
 
-        public MainPage()
+        // --- Keyboard State ---
+        private bool _keyboardVisible = false;
+
+        public MainPage(MainViewModel viewModel)
         {
             InitializeComponent();
-            wsClient.Disconnected += (_, __) =>
-                MainThread.BeginInvokeOnMainThread(() =>
-                {
-                    isConnected = false;
-                    ConnectButton.Text = "Odpojeno";
-                    ConnectButton.BackgroundColor = Colors.LightGray;
-                });
 
+            // Wire up ViewModel
+            _viewModel = viewModel;
+            BindingContext = _viewModel;
+
+            // Setup Touchpad Geometry Events
             TouchpadLayout.SizeChanged += (_, __) => UpdateMaxKnobGeometry();
             Knob.SizeChanged += (_, __) => UpdateMaxKnobGeometry();
             TouchpadArea.SizeChanged += (_, __) => UpdateMaxKnobGeometry();
 
+            // Setup Touchpad Gestures
             var pan = new PanGestureRecognizer();
             pan.PanUpdated += OnTouchpadPanUpdated;
             TouchpadLayout.GestureRecognizers.Add(pan);
@@ -57,87 +61,48 @@ namespace dumbRemote
             tap.Tapped += OnTouchpadTapped;
             TouchpadLayout.GestureRecognizers.Add(tap);
 
+            // Setup Knob Click
             var knobTap = new TapGestureRecognizer();
-            knobTap.Tapped += (s, e) =>
-            {
-                _ = wsClient.SendMessageAsync("CLICK:MOUSELEFT");
-            };
+            knobTap.Tapped += async (s, e) => _viewModel.SendCommand.Execute("CLICK:MOUSELEFT");
             Knob.GestureRecognizers.Add(knobTap);
-
-            /*KeyboardEntry.BackspacePressed += (s, e) =>
-            {
-                _ = wsClient.SendMessageAsync("BACKSPACE");
-            };*/
         }
 
         protected override void OnSizeAllocated(double w, double h)
         {
             base.OnSizeAllocated(w, h);
+            // Simple responsive scaling
             const double dw = 400, dh = 800;
             var scale = Math.Min(w / dw, h / dh);
             RootLayout.Scale = scale;
         }
+
         protected override void OnAppearing()
         {
             base.OnAppearing();
             UpdateMaxKnobGeometry();
         }
 
-        async void OnConnectClicked(object s, EventArgs e)
-        {
-            if (!isConnected)
-            {
-                try
-                {
-                    await wsClient.ConnectAsync("ws://192.168.0.83:8080/ws/");
-                    isConnected = true;
-                    ConnectButton.Text = "Připojeno";
-                    ConnectButton.BackgroundColor = Colors.LightGreen;
-                }
-                catch (Exception ex) { await DisplayAlert("Chyba", ex.Message, "OK"); }
-            }
-            else
-            {
-                await wsClient.DisconnectAsync();
-            }
-        }
+        #region Touchpad Logic
 
-        // TOUCHPAD
         void UpdateMaxKnobGeometry()
         {
-            if (TouchpadLayout.Width <= 0 || TouchpadLayout.Height <= 0 || Knob.Width <= 0 || Knob.Height <= 0)
-                return;
+            if (TouchpadLayout.Width <= 0 || TouchpadLayout.Height <= 0 || Knob.Width <= 0) return;
 
-            // střed touchpadu
-            touchpadCenter = new Point(TouchpadLayout.Width / 2d, TouchpadLayout.Height / 2d);
-
-            // bezpečný okraj, aby byl knob vždy celý uvnitř (v DIPs)
+            _touchpadCenter = new Point(TouchpadLayout.Width / 2d, TouchpadLayout.Height / 2d);
             const double safeMargin = 10d;
 
-            // max vzdálenost středu knobu od středu touchpadu
-            maxKnobDistance = ((TouchpadLayout.Width - Knob.Width) / 2d) - safeMargin;
-            if (maxKnobDistance < 0) maxKnobDistance = 0;
+            _maxKnobDistance = ((TouchpadLayout.Width - Knob.Width) / 2d) - safeMargin;
+            if (_maxKnobDistance < 0) _maxKnobDistance = 0;
 
-            // po změně geometrie případně zacentrej (pokud zrovna netaháš)
-            if (!knobGrabbed)
-                CenterKnob();
+            if (!_knobGrabbed) CenterKnob();
         }
 
-        void EnsureMaxUpToDate()
+        void OnTouchpadClicked(object sender, EventArgs e)
         {
-            // pro jistotu přepočítej těsně před použitím
-            if (maxKnobDistance <= 0 || Knob.Width <= 0)
-                UpdateMaxKnobGeometry();
-        }
-
-        void OnTouchpadClicked(object _, EventArgs __)
-        {
-            ControlWheel.IsVisible = !ControlWheel.IsVisible;
-            TouchpadArea.IsVisible = !TouchpadArea.IsVisible;
-            if (TouchpadArea.IsVisible)
-            {
-                KeyboardEntry.IsVisible = false;
-            }
+            // Toggle between D-Pad and Touchpad
+            bool isTouchpadVisible = !TouchpadArea.IsVisible;
+            ControlWheel.IsVisible = !isTouchpadVisible;
+            TouchpadArea.IsVisible = isTouchpadVisible;
         }
 
         void CenterKnob()
@@ -145,64 +110,43 @@ namespace dumbRemote
             StopMoveLoop();
             Knob.TranslationX = 0;
             Knob.TranslationY = 0;
-            _ = wsClient.SendMessageAsync("MOVE:0:0");
+            // Stop movement on server
+            _ = _viewModel.SendMove(0, 0);
         }
 
-        void EnsureMoveLoop()
+        void OnTouchpadTapped(object? sender, TappedEventArgs e)
         {
-            if (moveCts != null && !moveCts.IsCancellationRequested) return;
+            Point pos = (Point)e.GetPosition(TouchpadLayout);
 
-            moveCts = new CancellationTokenSource();
-            var token = moveCts.Token;
-
-            _ = Task.Run(async () =>
+            // Check if tapped directly on knob
+            if (IsPointInKnob(pos))
             {
-                while (!token.IsCancellationRequested)
-                {
-                    var offset = new Vector2((float)Knob.TranslationX, (float)Knob.TranslationY);
-                    if (Math.Abs(offset.X) < 0.5 && Math.Abs(offset.Y) < 0.5)
-                    {
-                        await Task.Delay(50, token);
-                        continue;
-                    }
-                    var normalized = offset / (float)maxKnobDistance;
-                    normalized = Vector2.Clamp(normalized, new Vector2(-1, -1), new Vector2(1, 1));
-                    int dx = (int)(normalized.X * 100);
-                    int dy = (int)(normalized.Y * 100);
-                    await wsClient.SendMessageAsync($"MOVE:{dx}:{dy}");
+                _viewModel.SendCommand.Execute("CLICK:MOUSELEFT");
+                return;
+            }
 
-                    await Task.Delay(50, token); // interval opakování
-                }
-            }, token);
+            // Otherwise move knob there momentarily
+            MoveKnobTo(pos);
+            CenterKnob();
         }
-
-        void StopMoveLoop()
-        {
-            try { moveCts?.Cancel(); } catch { }
-        }
-
 
         bool IsPointInKnob(Point point)
         {
             var layout = (Layout)TouchpadArea.Content;
-
             double knobCenterX = layout.Width / 2 + Knob.TranslationX;
             double knobCenterY = layout.Height / 2 + Knob.TranslationY;
-
             double dx = point.X - knobCenterX;
             double dy = point.Y - knobCenterY;
-
-            double radius = Knob.Width / 2 + 10;
-
+            double radius = Knob.Width / 2 + 10; // Hitbox slightly larger
             return dx * dx + dy * dy <= radius * radius;
         }
 
         void MoveKnobTo(Point p)
         {
-            EnsureMaxUpToDate();
+            if (_maxKnobDistance <= 0) UpdateMaxKnobGeometry();
 
-            Vector2 offset = new((float)(p.X - touchpadCenter.X), (float)(p.Y - touchpadCenter.Y));
-            var max = (float)maxKnobDistance;
+            Vector2 offset = new((float)(p.X - _touchpadCenter.X), (float)(p.Y - _touchpadCenter.Y));
+            var max = (float)_maxKnobDistance;
 
             if (offset.Length() > max && max > 0)
                 offset = Vector2.Normalize(offset) * max;
@@ -210,182 +154,216 @@ namespace dumbRemote
             Knob.TranslationX = offset.X;
             Knob.TranslationY = offset.Y;
 
-            SendMove(offset);
+            SendMoveFromOffset(offset);
         }
 
+        void OnKnobPanUpdated(object? sender, PanUpdatedEventArgs e) => HandlePan(e, true);
+        void OnTouchpadPanUpdated(object? sender, PanUpdatedEventArgs e) => HandlePan(e, false);
 
-        void SendMove(Vector2 offset)
-        {
-            var normalized = offset / (float)maxKnobDistance;
-
-            // klipujeme na [-1,1] pro rychlost
-            normalized = Vector2.Clamp(normalized, new Vector2(-1, -1), new Vector2(1, 1));
-
-            int dx = (int)(normalized.X * 100);  // procenta rychlosti
-            int dy = (int)(normalized.Y * 100);
-            _ = wsClient.SendMessageAsync($"MOVE:{dx}:{dy}");
-        }
-
-        void OnTouchpadTapped(object sender, TappedEventArgs e)
-        {
-            Point pos = (Microsoft.Maui.Graphics.Point)e.GetPosition(TouchpadLayout);
-            if (IsPointInKnob(pos))
-            {
-                _ = wsClient.SendMessageAsync("CLICK:MOUSELEFT");
-                return;
-            }
-
-            MoveKnobTo(pos);
-            CenterKnob(); // simulace puštění
-        }
-
-        void OnKnobPanUpdated(object sender, PanUpdatedEventArgs e)
+        void HandlePan(PanUpdatedEventArgs e, bool isKnobDirect)
         {
             switch (e.StatusType)
             {
                 case GestureStatus.Started:
-                    knobStartX = Knob.TranslationX;
-                    knobStartY = Knob.TranslationY;
+                    _knobStartX = Knob.TranslationX;
+                    _knobStartY = Knob.TranslationY;
+
+                    if (!isKnobDirect)
+                    {
+                        var relPoint = new Point(e.TotalX + _touchpadCenter.X, e.TotalY + _touchpadCenter.Y);
+                        _knobGrabbed = IsPointInKnob(relPoint);
+                    }
+                    else _knobGrabbed = true;
                     break;
 
                 case GestureStatus.Running:
-                    EnsureMaxUpToDate();
-                    double newX = knobStartX + e.TotalX;
-                    double newY = knobStartY + e.TotalY;
+                    if (!_knobGrabbed) return;
 
-                    double max = maxKnobDistance;
+                    double newX = _knobStartX + e.TotalX;
+                    double newY = _knobStartY + e.TotalY;
+
+                    double max = _maxKnobDistance;
+                    // Clamp to circular area (simple box clamp for now is fast)
                     newX = Math.Max(-max, Math.Min(max, newX));
                     newY = Math.Max(-max, Math.Min(max, newY));
 
                     Knob.TranslationX = newX;
                     Knob.TranslationY = newY;
 
-                    if (Math.Abs(newX) > 0.5 || Math.Abs(newY) > 0.5)
-                        EnsureMoveLoop();
+                    if (isKnobDirect)
+                    {
+                        // Joystick Mode (Continuous movement)
+                        if (Math.Abs(newX) > 0.5 || Math.Abs(newY) > 0.5) EnsureMoveLoop();
+                        else StopMoveLoop();
+                    }
                     else
-                        StopMoveLoop();
+                    {
+                        // Mouse Pad Mode (Relative movement)
+                        SendMoveFromOffset(new Vector2((float)newX, (float)newY));
+                    }
                     break;
 
                 case GestureStatus.Completed:
                 case GestureStatus.Canceled:
+                    _knobGrabbed = false;
                     StopMoveLoop();
                     CenterKnob();
                     break;
             }
         }
 
-
-        void OnTouchpadPanUpdated(object sender, PanUpdatedEventArgs e)
+        void SendMoveFromOffset(Vector2 offset)
         {
-            var layout = (Layout)TouchpadArea.Content;
+            var normalized = offset / (float)_maxKnobDistance;
+            normalized = Vector2.Clamp(normalized, new Vector2(-1, -1), new Vector2(1, 1));
 
-            switch (e.StatusType)
+            int dx = (int)(normalized.X * 100);
+            int dy = (int)(normalized.Y * 100);
+
+            _ = _viewModel.SendMove(dx, dy);
+        }
+
+        void EnsureMoveLoop()
+        {
+            if (_moveLoopCts != null && !_moveLoopCts.IsCancellationRequested) return;
+
+            _moveLoopCts = new CancellationTokenSource();
+            var token = _moveLoopCts.Token;
+
+            _ = Task.Run(async () =>
             {
-                case GestureStatus.Started:
-                    knobStartX = Knob.TranslationX;
-                    knobStartY = Knob.TranslationY;
+                while (!token.IsCancellationRequested)
+                {
+                    var offset = new Vector2((float)Knob.TranslationX, (float)Knob.TranslationY);
+                    if (Math.Abs(offset.X) > 0.5 || Math.Abs(offset.Y) > 0.5)
+                    {
+                        SendMoveFromOffset(offset);
+                    }
+                    await Task.Delay(50, token);
+                }
+            }, token);
+        }
 
-                    // relativní pozice dotyku uvnitř layoutu
-                    var relPoint = new Point(e.TotalX + touchpadCenter.X, e.TotalY + touchpadCenter.Y);
-                    knobGrabbed = IsPointInKnob(relPoint);
-                    break;
+        void StopMoveLoop()
+        {
+            try { _moveLoopCts?.Cancel(); } catch { }
+            _moveLoopCts = null;
+        }
 
-                case GestureStatus.Running:
-                    if (!knobGrabbed) return;
-                    EnsureMaxUpToDate();
+        #endregion
 
-                    double newX = knobStartX + e.TotalX;
-                    double newY = knobStartY + e.TotalY;
+        #region Connect button
 
-                    double max = maxKnobDistance;
-                    newX = Math.Max(-max, Math.Min(max, newX));
-                    newY = Math.Max(-max, Math.Min(max, newY));
+        // --- Connect Button Long Press Logic ---
+        private CancellationTokenSource? _longPressCts;
+        private bool _isLongPressActionTriggered;
 
-                    Knob.TranslationX = newX;
-                    Knob.TranslationY = newY;
+        private async void OnConnectPressed(object sender, EventArgs e)
+        {
+            _isLongPressActionTriggered = false;
+            _longPressCts = new CancellationTokenSource();
 
-                    SendMove(new Vector2((float)newX, (float)newY));
-                    break;
+            try
+            {
+                await Task.Delay(800, _longPressCts.Token);
 
-                case GestureStatus.Completed:
-                case GestureStatus.Canceled:
-                    knobGrabbed = false;
-                    CenterKnob();
-                    break;
+                _isLongPressActionTriggered = true;
+
+                MainThread.BeginInvokeOnMainThread(() =>
+                {
+                    try { HapticFeedback.Perform(HapticFeedbackType.LongPress); } catch { }
+
+                    _viewModel.ToggleIpEntryCommand.Execute(null);
+                });
+            }
+            catch (TaskCanceledException) { }
+        }
+
+        private void OnConnectReleased(object sender, EventArgs e)
+        {
+            _longPressCts?.Cancel();
+
+            if (!_isLongPressActionTriggered)
+            {
+                if (_viewModel.IsIpEntryVisible)
+                {
+                    _viewModel.ToggleIpEntryCommand.Execute(null);
+                    _viewModel.ConnectCommand.Execute(null);
+                }
+                else
+                {
+                    _viewModel.ConnectCommand.Execute(null);
+                }
             }
         }
 
-        // MOUSE LEFT/RIGHT
-        async void OnMouseLeftClicked(object s, EventArgs e) =>
-            await wsClient.SendMessageAsync("CLICK:MOUSELEFT");
-        async void OnMouseRightClicked(object s, EventArgs e) =>
-            await wsClient.SendMessageAsync("CLICK:MOUSERIGHT");
+        #endregion
 
-        // CURSOR HOLD
-        async Task Repeat(string cmd, CancellationToken token)
+        #region Buttons Hold-to-Repeat
+
+        async Task RepeatCommand(string cmd, CancellationToken token)
         {
             while (!token.IsCancellationRequested)
             {
-                await wsClient.SendMessageAsync(cmd);
-                await Task.Delay(100, token);
+                _viewModel.SendCommand.Execute(cmd);
+                await Task.Delay(100, token); // Repeat rate
             }
         }
 
-        void OnUpPressed(object _, EventArgs __) { upCts = new(); _ = Repeat("CLICK:UP", upCts.Token); }
-        void OnUpReleased(object _, EventArgs __) => upCts?.Cancel();
-        void OnDownPressed(object _, EventArgs __) { downCts = new(); _ = Repeat("CLICK:DOWN", downCts.Token); }
-        void OnDownReleased(object _, EventArgs __) => downCts?.Cancel();
-        void OnLeftPressed(object _, EventArgs __) { leftCts = new(); _ = Repeat("CLICK:LEFT", leftCts.Token); }
-        void OnLeftReleased(object _, EventArgs __) => leftCts?.Cancel();
-        void OnRightPressed(object _, EventArgs __) { rightCts = new(); _ = Repeat("CLICK:RIGHT", rightCts.Token); }
-        void OnRightReleased(object _, EventArgs __) => rightCts?.Cancel();
+        void OnUpPressed(object s, EventArgs e) { _repeatCts = new(); _ = RepeatCommand("CLICK:UP", _repeatCts.Token); }
+        void OnUpReleased(object s, EventArgs e) => _repeatCts?.Cancel();
 
-        // BACK / HOME
-        async void OnBackClicked(object _, EventArgs __) =>
-            await wsClient.SendMessageAsync("CLICK:BACK");
-        async void OnHomeClicked(object _, EventArgs __) =>
-            await wsClient.SendMessageAsync("CLICK:HOME");
+        void OnDownPressed(object s, EventArgs e) { _repeatCts = new(); _ = RepeatCommand("CLICK:DOWN", _repeatCts.Token); }
+        void OnDownReleased(object s, EventArgs e) => _repeatCts?.Cancel();
 
+        void OnLeftPressed(object s, EventArgs e) { _repeatCts = new(); _ = RepeatCommand("CLICK:LEFT", _repeatCts.Token); }
+        void OnLeftReleased(object s, EventArgs e) => _repeatCts?.Cancel();
 
-        // KEYBOARD
-        bool keyboardVisible = false;
+        void OnRightPressed(object s, EventArgs e) { _repeatCts = new(); _ = RepeatCommand("CLICK:RIGHT", _repeatCts.Token); }
+        void OnRightReleased(object s, EventArgs e) => _repeatCts?.Cancel();
 
-        void OnKeyboardClicked(object _, EventArgs __)
+        #endregion
+
+        #region Keyboard
+
+        void OnKeyboardClicked(object sender, EventArgs e)
         {
-            if (!keyboardVisible)
+            if (!_keyboardVisible)
             {
                 KeyboardEntry.Focus();
-                KeyboardEntry.IsVisible = true;
-                keyboardVisible = true;
+                _keyboardVisible = true;
             }
             else
             {
                 KeyboardEntry.Unfocus();
-#if ANDROID
-                if (KeyboardEntry.Handler.PlatformView is global::Android.Views.View nativeView)
-                {
-                    var activity = Platform.CurrentActivity as Activity;
-                    var imm = activity?.GetSystemService(Context.InputMethodService) as InputMethodManager;
-                    imm?.HideSoftInputFromWindow(nativeView.WindowToken, HideSoftInputFlags.None);
-                }
-#elif IOS
-                        UIApplication.SharedApplication.KeyWindow.EndEditing(true);
-#endif
-                KeyboardEntry.IsVisible = false;
-                keyboardVisible = false;
-                KeyboardEntry.Text = "                                                                                                                                                                                                                                                       ";
+                HideKeyboard();
+                _keyboardVisible = false;
+                KeyboardEntry.Text = "";
             }
         }
-        private void KeyboardEntry_Completed(object sender, EventArgs e)
+
+        private void HideKeyboard()
         {
-            KeyboardEntry.IsVisible = false;
-            keyboardVisible = false;
-            _ = wsClient.SendMessageAsync("TYPE:\n");//mozna se ma dat na prvni misto v teto funkci
-            KeyboardEntry.Text = "                                                                                                                                                                                                                                                       ";
+#if ANDROID
+            if (KeyboardEntry.Handler?.PlatformView is Android.Views.View nativeView)
+            {
+                var activity = Platform.CurrentActivity as Activity;
+                var imm = activity?.GetSystemService(Context.InputMethodService) as InputMethodManager;
+                imm?.HideSoftInputFromWindow(nativeView.WindowToken, HideSoftInputFlags.None);
+            }
+#elif IOS
+            UIApplication.SharedApplication.KeyWindow?.EndEditing(true);
+#endif
         }
 
+        private void KeyboardEntry_Completed(object sender, EventArgs e)
+        {
+            _keyboardVisible = false;
+            _viewModel.TypeTextCommand.Execute("\n");
+            KeyboardEntry.Text = "";
+        }
 
-        void KeyboardEntry_TextChanged(object s, TextChangedEventArgs e)
+        void KeyboardEntry_TextChanged(object sender, TextChangedEventArgs e)
         {
             var newText = e.NewTextValue ?? "";
             var oldText = e.OldTextValue ?? "";
@@ -394,21 +372,15 @@ namespace dumbRemote
 
             if (added > 0)
             {
-                var c = newText.Last();
-                _ = wsClient.SendMessageAsync($"TYPE:{c}");
+                var c = newText.Last().ToString();
+                _viewModel.TypeTextCommand.Execute(c);
             }
             else if (added < 0)
             {
-                _ = wsClient.SendMessageAsync("BACKSPACE");
+                _viewModel.SendCommand.Execute("BACKSPACE");
             }
         }
 
-        // VOLUME
-        async void OnMuteClicked(object _, EventArgs __) =>
-            await wsClient.SendMessageAsync("CLICK:MUTE");
-        async void OnVolumeDownClicked(object _, EventArgs __) =>
-            await wsClient.SendMessageAsync("CLICK:VOLDOWN");
-        async void OnVolumeUpClicked(object _, EventArgs __) =>
-            await wsClient.SendMessageAsync("CLICK:VOLUP");
+        #endregion
     }
 }
