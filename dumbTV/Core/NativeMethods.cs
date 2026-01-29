@@ -176,5 +176,18 @@ namespace dumbTV.Core
         public static extern bool SystemParametersInfo(uint uiAction, uint uiParam, IntPtr pvParam, uint fWinIni);
 
         #endregion
+
+        #region Methods – Process Freezing
+
+        [DllImport("ntdll.dll", PreserveSig = false)]
+        public static extern void NtSuspendProcess(IntPtr processHandle);
+
+        [DllImport("ntdll.dll", PreserveSig = false)]
+        public static extern void NtResumeProcess(IntPtr processHandle);
+
+        [DllImport("user32.dll")]
+        public static extern IntPtr GetForegroundWindow();
+
+        #endregion
     }
 }

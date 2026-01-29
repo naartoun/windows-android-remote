@@ -14,13 +14,13 @@ using dumbTV.Services;
 using Fleck;
 using NAudio.CoreAudioApi;
 using NAudio.CoreAudioApi.Interfaces;
-using System.IO;
-using System.Reflection;
-using System.Net;
-using System.Net.Sockets;
-using System.Net.NetworkInformation;
-using System.Text;
 using System.Diagnostics;
+using System.IO;
+using System.Net;
+using System.Net.NetworkInformation;
+using System.Net.Sockets;
+using System.Reflection;
+using System.Text;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -47,6 +47,18 @@ namespace dumbTV
         private readonly CursorService _cursorService;
         private readonly InputService _inputService;
         private readonly AppLauncherService _appLauncher;
+
+        private List<int> _suspendedProcessIds = new List<int>();
+        private string _lastAppPage = "";
+
+        // Accumulators for joystick movement translation
+        private double _joyAccX = 0;
+        private double _joyAccY = 0;
+        // Threshold: How much movement is needed to trigger a key press (higher = slower/less sensitive)
+        private const double JOYSTICK_THRESHOLD = 200.0;
+
+        // Flag to track if the last interaction was via mouse (joystick) or keyboard (d-pad)
+        private bool _wasLastInputMouse = false;
 
         #endregion
 
@@ -124,6 +136,7 @@ namespace dumbTV
             // Set initial focus and start background animation
             BombujButton.Focus();
             AnimateGradientMovement();
+            ShowIpAddress();
         }
 
         private void ExtractResource(string resourceName, string outputPath)
@@ -163,6 +176,17 @@ namespace dumbTV
         }
 
         /// <summary>
+        /// Moves the mouse cursor relatively by dx, dy.
+        /// </summary>
+        private void MoveCursor(int dx, int dy)
+        {
+            if (GetCursorPos(out POINT currentPos))
+            {
+                SetCursorPos(currentPos.X + dx, currentPos.Y + dy);
+            }
+        }
+
+        /// <summary>
         /// Processes incoming commands from the WebSocket client.
         /// Translates commands into UI actions or InputService calls.
         /// </summary>
@@ -177,7 +201,7 @@ namespace dumbTV
                     // Context-aware click:
                     // If using remote navigation (arrows) or on Home screen, behave like ENTER.
                     // Otherwise, behave like a standard mouse click.
-                    if (_inputService.LastInputType == 2 || currentPage == "Home")
+                    if (currentPage == "Home" || !_wasLastInputMouse)
                     {
                         _inputService.SendKey(VK_RETURN);
                     }
@@ -187,38 +211,100 @@ namespace dumbTV
                     }
                 }
                 else if (cmd == "CLICK:MOUSERIGHT")
+                {
                     _inputService.MouseRightClick();
+                }
                 else if (cmd == "CLICK:UP")
+                {
+                    _wasLastInputMouse = false;
                     _inputService.SendKey(VK_UP);
+                }
                 else if (cmd == "CLICK:DOWN")
+                {
+                    _wasLastInputMouse = false;
                     _inputService.SendKey(VK_DOWN);
+                }
                 else if (cmd == "CLICK:LEFT")
+                {
+                    _wasLastInputMouse = false;
                     _inputService.SendKey(VK_LEFT);
+                }
                 else if (cmd == "CLICK:RIGHT")
+                {
+                    _wasLastInputMouse = false;
                     _inputService.SendKey(VK_RIGHT);
+                }
                 else if (cmd == "CLICK:BACK")
+                {
                     _inputService.SendKey(VK_BROWSER_BACK);
+                }
                 else if (cmd == "CLICK:HOME")
+                {
                     GoHome();
+                }
                 else if (cmd == "CLICK:MUTE")
+                {
                     _inputService.SendKey(VK_VOLUME_MUTE);
+                }
                 else if (cmd == "CLICK:VOLDOWN")
+                {
                     _inputService.SendKey(VK_VOLUME_DOWN);
+                }
                 else if (cmd == "CLICK:VOLUP")
+                {
                     _inputService.SendKey(VK_VOLUME_UP);
+                }
                 else if (cmd == "BACKSPACE")
+                {
                     _inputService.SendBackspace();
+                }
                 else if (cmd.StartsWith("TYPE:") && cmd.Length > 5)
+                {
                     _inputService.SendChar(cmd[5]);
+                }
                 else if (cmd.StartsWith("MOVE:"))
                 {
-                    // Parse coordinates for cursor movement
-                    var parts = cmd.Substring(5).Split(':');
-                    if (parts.Length == 2
-                        && int.TryParse(parts[0], out var dx)
-                        && int.TryParse(parts[1], out var dy))
+                    var parts = cmd.Split(':');
+                    if (parts.Length == 3 && int.TryParse(parts[1], out int dx) && int.TryParse(parts[2], out int dy))
                     {
-                        _inputService.MoveCursor(dx, dy);
+                        // --- INTELLIGENT NAVIGATION LOGIC ---
+
+                        if (currentPage == "Home")
+                        {
+                            // MODE: JOYSTICK NAVIGATION (Simulates D-Pad)
+                            // Instead of moving the mouse, we accumulate the vectors.
+                            // When threshold is reached, we press an Arrow Key.
+
+                            _joyAccX += dx;
+                            _joyAccY += dy;
+
+                            // Check Horizontal Threshold
+                            if (Math.Abs(_joyAccX) > JOYSTICK_THRESHOLD)
+                            {
+                                _wasLastInputMouse = false;
+                                if (_joyAccX > 0) _inputService.SendKey(VK_RIGHT); // or HandleCommand("CLICK:RIGHT");
+                                else _inputService.SendKey(VK_LEFT);  // or HandleCommand("CLICK:LEFT");
+
+                                _joyAccX = 0; // Reset after trigger
+                            }
+
+                            // Check Vertical Threshold
+                            if (Math.Abs(_joyAccY) > JOYSTICK_THRESHOLD)
+                            {
+                                _wasLastInputMouse = false;
+                                if (_joyAccY > 0) _inputService.SendKey(VK_DOWN);  // Y is inverted in screens? Usually Down is +
+                                else _inputService.SendKey(VK_UP);
+
+                                _joyAccY = 0; // Reset after trigger
+                            }
+                        }
+                        else
+                        {
+                            // MODE: MOUSE CURSOR (Standard)
+                            // On other pages (Browser, VLC...), act as a mouse.
+                            _wasLastInputMouse = true;
+                            MoveCursor(dx, dy);
+                        }
                     }
                 }
             });
@@ -280,111 +366,36 @@ namespace dumbTV
         /// </summary>
         private void GoHome()
         {
-            // Attempt to pause media players before leaving
-            PauseBrave();
-            PauseVLC();
+            if (currentPage != "Home" && _suspendedProcessIds.Count == 0)
+            {
+                string procName = "";
+                if (currentPage == "YouTube" || currentPage == "bombuj" || currentPage == "iVysílání" || currentPage == "Brave")
+                    procName = "brave";
+                else if (currentPage == "VLC")
+                    procName = "vlc";
 
-            // Reactivate the main window
+                if (!string.IsNullOrEmpty(procName))
+                {
+                    var processes = Process.GetProcessesByName(procName);
+                    foreach (var p in processes)
+                    {
+                        try
+                        {
+                            Core.NativeMethods.NtSuspendProcess(p.Handle);
+                            _suspendedProcessIds.Add(p.Id);
+                        }
+                        catch { }
+                    }
+                    if (_suspendedProcessIds.Count > 0) _lastAppPage = currentPage;
+                }
+            }
+
             this.Activate();
             currentPage = "Home";
-
+            _joyAccX = 0;
+            _joyAccY = 0;
             SetCursorPos(0, 0);
-        }
-
-        /// <summary>
-        /// Checks if a specific process is currently outputting audio.
-        /// Uses NAudio to inspect Core Audio API sessions.
-        /// </summary>
-        /// <param name="processName">The name of the process to check (e.g., "vlc", "brave").</param>
-        /// <returns>True if the process has an active audio session, otherwise false.</returns>
-        public bool IsProcessPlayingAudio(string processName)
-        {
-            try
-            {
-                using (var enumerator = new MMDeviceEnumerator())
-                using (var device = enumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia))
-                {
-                    var sessions = device.AudioSessionManager.Sessions;
-
-                    for (int i = 0; i < sessions.Count; i++)
-                    {
-                        var session = sessions[i];
-
-                        // Only consider sessions that are actively playing
-                        if (session.State == AudioSessionState.AudioSessionStateActive)
-                        {
-                            try
-                            {
-                                int pid = (int)session.GetProcessID;
-                                using (var p = Process.GetProcessById(pid))
-                                {
-                                    if (p.ProcessName.Equals(processName, StringComparison.OrdinalIgnoreCase))
-                                        return true;
-                                }
-                            }
-                            catch
-                            {
-                                // Process might have exited during enumeration, ignore
-                            }
-                        }
-                    }
-                }
-            }
-            catch
-            {
-                // Handle device enumeration errors gracefully
-                return false;
-            }
-
-            return false;
-        }
-
-        /// <summary>
-        /// Tries to pause VLC if it is currently playing audio.
-        /// </summary>
-        private void PauseVLC()
-        {
-            // Optimization: First check if VLC is actually making noise.
-            // This prevents un-pausing a video that is already paused.
-            if (!IsProcessPlayingAudio("vlc")) return;
-
-            foreach (var process in Process.GetProcessesByName("vlc"))
-            {
-                try
-                {
-                    if (!process.HasExited && process.MainWindowTitle.Contains("VLC"))
-                    {
-                        _inputService.SendSpaceToWindow(process.MainWindowHandle);
-                    }
-                }
-                catch { /* Ignore process access errors */ }
-            }
-        }
-
-        /// <summary>
-        /// Tries to pause Brave browser instances if they are playing audio.
-        /// Note: This is a "best effort" approach using the Space key.
-        /// </summary>
-        private void PauseBrave()
-        {
-            // Only attempt to pause if audio is detected from Brave
-            if (!IsProcessPlayingAudio("brave")) return;
-
-            foreach (var process in Process.GetProcessesByName("brave"))
-            {
-                try
-                {
-                    // We only target the window that matches the current page title logic
-                    // or simply the active one if we could identify it.
-                    if (!process.HasExited && !string.IsNullOrEmpty(process.MainWindowTitle))
-                    {
-                        // Sending Space to browser is risky (scrolls page), 
-                        // but acceptable for full-screen video players in this prototype.
-                        _inputService.SendSpaceToWindow(process.MainWindowHandle);
-                    }
-                }
-                catch { }
-            }
+            BombujButton.Focus();
         }
 
         #endregion
@@ -393,111 +404,97 @@ namespace dumbTV
 
         private async void YouTubeButton_Click(object sender, RoutedEventArgs e)
         {
-            try
-            {
-                await _appLauncher.LaunchAppAsync(_appYouTube);
-                currentPage = "YouTube";
-            }
-            catch (Exception ex) { MessageBox.Show($"Error launching YouTube: {ex.Message}"); }
+            await ResumeOrLaunch(_appYouTube, "YouTube");
         }
 
         private async void VLCButton_Click(object sender, RoutedEventArgs e)
         {
-            try
-            {
-                await _appLauncher.LaunchAppAsync(_appVLC);
-                currentPage = "VLC";
-            }
-            catch (Exception ex) { MessageBox.Show($"Error launching VLC: {ex.Message}"); }
+            await ResumeOrLaunch(_appVLC, "VLC");
         }
 
         private async void BombujButton_Click(object sender, RoutedEventArgs e)
         {
-            try
-            {
-                await _appLauncher.LaunchAppAsync(_appBombuj);
-                currentPage = "bombuj";
-            }
-            catch (Exception ex) { MessageBox.Show($"Error launching Bombuj: {ex.Message}"); }
+            await ResumeOrLaunch(_appBombuj, "bombuj");
         }
 
         private async void iVysilaniButton_Click(object sender, RoutedEventArgs e)
         {
-            try
-            {
-                await _appLauncher.LaunchAppAsync(_appIVysilani);
-                currentPage = "iVysílání";
-            }
-            catch (Exception ex) { MessageBox.Show($"Error launching iVysilani: {ex.Message}"); }
+            await ResumeOrLaunch(_appIVysilani, "iVysílání");
         }
 
         private async void InternetButton_Click(object sender, RoutedEventArgs e)
         {
-            try
-            {
-                await _appLauncher.LaunchAppAsync(_appInternet);
-                currentPage = "Brave";
-            }
-            catch (Exception ex) { MessageBox.Show($"Error launching Internet: {ex.Message}"); }
+            await ResumeOrLaunch(_appInternet, "Brave");
         }
 
-        /// <summary>
-        /// Handles the click event for the Settings/IP button.
-        /// Attempts to find the single most relevant IPv4 address of the main network adapter.
-        /// </summary>
-        /// <param name="sender">The source of the event (the Button).</param>
-        /// <param name="e">Event data.</param>
-        private void IpInfoButton_Click(object sender, RoutedEventArgs e)
+        private async Task ResumeOrLaunch(AppItem app, string pageName)
         {
-            string bestIpAddress = "Nenalezeno (Not Found)";
-            bool found = false;
-
             try
             {
-                // Iterate over all network interfaces (adapters) on the machine
-                foreach (NetworkInterface nic in NetworkInterface.GetAllNetworkInterfaces())
+                if (_suspendedProcessIds.Count > 0 && _lastAppPage == pageName)
                 {
-                    // Filter out interfaces that are not active (Up) or are loopback adapters (localhost)
-                    if (nic.OperationalStatus != OperationalStatus.Up || nic.NetworkInterfaceType == NetworkInterfaceType.Loopback)
-                        continue;
+                    foreach (var pid in _suspendedProcessIds)
+                    {
+                        try
+                        {
+                            var p = Process.GetProcessById(pid);
+                            Core.NativeMethods.NtResumeProcess(p.Handle);
 
-                    // Get IP properties for this adapter
+                            if (p.MainWindowHandle != IntPtr.Zero)
+                            {
+                                Core.NativeMethods.ShowWindow(p.MainWindowHandle, Core.NativeMethods.SW_MAXIMIZE);
+                                Core.NativeMethods.SetForegroundWindow(p.MainWindowHandle);
+                            }
+                        }
+                        catch { }
+                    }
+                    _suspendedProcessIds.Clear();
+                }
+                else
+                {
+                    if (_suspendedProcessIds.Count > 0)
+                    {
+                        foreach (var pid in _suspendedProcessIds)
+                        {
+                            try { Process.GetProcessById(pid).Kill(); } catch { }
+                        }
+                        _suspendedProcessIds.Clear();
+                    }
+
+                    await _appLauncher.LaunchAppAsync(app);
+                }
+
+                currentPage = pageName;
+            }
+            catch (Exception ex) { MessageBox.Show("Chyba: " + ex.Message); }
+        }
+
+        private void ShowIpAddress()
+        {
+            try
+            {
+                string bestIp = "Nenalezeno";
+                foreach (var nic in System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces())
+                {
+                    if (nic.OperationalStatus != System.Net.NetworkInformation.OperationalStatus.Up ||
+                        nic.NetworkInterfaceType == System.Net.NetworkInformation.NetworkInterfaceType.Loopback) continue;
+
                     var ipProps = nic.GetIPProperties();
+                    if (ipProps.GatewayAddresses.Count == 0) continue;
 
-                    // Filter out virtual adapters without a gateway (often Docker/VMware)
-                    // An adapter connected to a real network usually has a gateway.
-                    if (ipProps.GatewayAddresses.Count == 0)
-                        continue;
-
-                    // Find the IPv4 address on this adapter
-                    foreach (UnicastIPAddressInformation ip in ipProps.UnicastAddresses)
+                    foreach (var ip in ipProps.UnicastAddresses)
                     {
                         if (ip.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
                         {
-                            bestIpAddress = ip.Address.ToString();
-                            found = true;
-                            // We found a good candidate, break out of both loops
-                            goto FoundLabel;
+                            bestIp = ip.Address.ToString();
+                            break;
                         }
                     }
+                    if (bestIp != "Nenalezeno") break;
                 }
+                IpAddressLabel.Text = bestIp;
             }
-            catch (Exception ex)
-            {
-                bestIpAddress = "Chyba: " + ex.Message;
-            }
-
-        FoundLabel:
-
-            var sb = new StringBuilder();
-            sb.AppendLine("IP adresa pro připojení ovladače:");
-            sb.AppendLine();
-            sb.AppendLine($"👉 {bestIpAddress}");
-            sb.AppendLine();
-            sb.AppendLine("Port: 8080");
-
-            MessageBoxImage icon = found ? MessageBoxImage.Information : MessageBoxImage.Warning;
-            MessageBox.Show(sb.ToString(), "Nastavení připojení", MessageBoxButton.OK, icon);
+            catch { IpAddressLabel.Text = "Chyba sítě"; }
         }
 
         #endregion
