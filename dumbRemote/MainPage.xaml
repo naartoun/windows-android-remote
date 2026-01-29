@@ -6,7 +6,7 @@
     x:Class="dumbRemote.MainPage"
     x:DataType="viewmodels:MainViewModel"
     NavigationPage.HasNavigationBar="False"
-    BackgroundColor="#1E1E1E">
+    BackgroundColor="{AppThemeBinding Light=White, Dark=#1E1E1E}">
 
     <AbsoluteLayout
       x:Name="RootLayout"
@@ -26,100 +26,211 @@
 
         <Frame
             x:Name="TouchpadArea"
-            IsVisible="False"
-            BackgroundColor="#2D2D2D"
-            CornerRadius="30"
+            IsVisible="True"
+            BackgroundColor="{AppThemeBinding Light=#E0E0E0, Dark=#2D2D2D}"
+            CornerRadius="150" 
             Padding="0"
             HasShadow="False"
             BorderColor="Transparent"
-            AbsoluteLayout.LayoutBounds="0.5,0.36,330,330"
+            WidthRequest="300"
+            HeightRequest="300"
+            AbsoluteLayout.LayoutBounds="0.5,0.37,300,300"
             AbsoluteLayout.LayoutFlags="PositionProportional">
 
             <AbsoluteLayout x:Name="TouchpadLayout" WidthRequest="300" HeightRequest="300">
+                <AbsoluteLayout.GestureRecognizers>
+                    <PanGestureRecognizer PanUpdated="OnKnobPanUpdated" />
+                </AbsoluteLayout.GestureRecognizers>
+
                 <Frame
                     x:Name="Knob"
-                    WidthRequest="60"
-                    HeightRequest="60"
-                    CornerRadius="30"
-                    BackgroundColor="#505050"
-                    HasShadow="False"
-                    BorderColor="Transparent"
+                    WidthRequest="80"
+                    HeightRequest="80"
+                    CornerRadius="40"
+                    BackgroundColor="{AppThemeBinding Light=#C0C0C0, Dark=#505050}"
+                    HasShadow="True"
+                    BorderColor="{AppThemeBinding Light=Gray, Dark=White}"
                     InputTransparent="True"
-                    AbsoluteLayout.LayoutBounds="0.5,0.5,60,60"
+                    AbsoluteLayout.LayoutBounds="0.5,0.5,80,80"
                     AbsoluteLayout.LayoutFlags="PositionProportional">
                 </Frame>
             </AbsoluteLayout>
         </Frame>
 
         <AbsoluteLayout
-        x:Name="ControlWheel"
-        WidthRequest="300"
-        HeightRequest="300"
-        IsVisible="true"
-        AbsoluteLayout.LayoutBounds="0.5,0.37,300,300"
-        AbsoluteLayout.LayoutFlags="PositionProportional">
+            x:Name="ControlWheel"
+            WidthRequest="300"
+            HeightRequest="300"
+            IsVisible="true"
+            AbsoluteLayout.LayoutBounds="0.5,0.37,300,300"
+            AbsoluteLayout.LayoutFlags="PositionProportional">
 
-            <Frame BackgroundColor="#2D2D2D" CornerRadius="150" WidthRequest="300" HeightRequest="300" BorderColor="Transparent"
-              AbsoluteLayout.LayoutBounds="0.5,0.5,300,300" AbsoluteLayout.LayoutFlags="PositionProportional" HasShadow="False" />
+            <Frame
+                BackgroundColor="{AppThemeBinding Light=#E0E0E0, Dark=#2D2D2D}" 
+                CornerRadius="150" 
+                WidthRequest="300" 
+                HeightRequest="300" 
+                BorderColor="Transparent"
+                AbsoluteLayout.LayoutBounds="0.5,0.5,300,300" 
+                AbsoluteLayout.LayoutFlags="PositionProportional" 
+                HasShadow="False" />
 
-            <Button BackgroundColor="#505050" CornerRadius="75" WidthRequest="150" HeightRequest="150"
-              AbsoluteLayout.LayoutBounds="0.5,0.5,150,150" AbsoluteLayout.LayoutFlags="PositionProportional"
-              Command="{Binding SendCommand}" CommandParameter="CLICK:MOUSELEFT"/>
+            <Button 
+                BackgroundColor="{AppThemeBinding Light=#C0C0C0, Dark=#505050}" 
+                CornerRadius="75" 
+                WidthRequest="150" 
+                HeightRequest="150"
+                AbsoluteLayout.LayoutBounds="0.5,0.5,150,150" 
+                AbsoluteLayout.LayoutFlags="PositionProportional"
+                Command="{Binding SendCommand}"
+                CommandParameter="CLICK:MOUSELEFT"/>
 
-            <Button Text="↑" FontSize="50" TextColor="White" BackgroundColor="Transparent" WidthRequest="120" HeightRequest="80" CornerRadius="40" Padding="0,0,0,15"
-              AbsoluteLayout.LayoutBounds="0.5,0,120,80" AbsoluteLayout.LayoutFlags="PositionProportional" Pressed="OnUpPressed" Released="OnUpReleased" />
+            <Button 
+                Text="↑" FontSize="50" 
+                TextColor="{AppThemeBinding Light=Black, Dark=White}" 
+                BackgroundColor="Transparent"
+                WidthRequest="120" HeightRequest="80" 
+                CornerRadius="40"
+                Padding="0,0,0,15"
+                AbsoluteLayout.LayoutBounds="0.5,0,120,80"
+                AbsoluteLayout.LayoutFlags="PositionProportional" 
+                Pressed="OnUpPressed" 
+                Released="OnUpReleased" />
 
-            <Button Text="↓" FontSize="50" TextColor="White" BackgroundColor="Transparent" WidthRequest="120" HeightRequest="80" CornerRadius="40" Padding="0,0,0,15"
-              AbsoluteLayout.LayoutBounds="0.5,1,120,80" AbsoluteLayout.LayoutFlags="PositionProportional" Pressed="OnDownPressed" Released="OnDownReleased" />
+            <Button
+                Text="↓" 
+                FontSize="50"
+                TextColor="{AppThemeBinding Light=Black, Dark=White}"
+                BackgroundColor="Transparent" 
+                WidthRequest="120" 
+                HeightRequest="80" 
+                CornerRadius="40" 
+                Padding="0,0,0,15"
+                AbsoluteLayout.LayoutBounds="0.5,1,120,80" 
+                AbsoluteLayout.LayoutFlags="PositionProportional"
+                Pressed="OnDownPressed" 
+                Released="OnDownReleased" />
 
-            <Button Text="←" FontSize="50" TextColor="White" BackgroundColor="Transparent" WidthRequest="80" HeightRequest="120" CornerRadius="40" Padding="0,0,0,15"
-              AbsoluteLayout.LayoutBounds="-0.01,0.5,80,120" AbsoluteLayout.LayoutFlags="PositionProportional" Pressed="OnLeftPressed" Released="OnLeftReleased" />
+            <Button Text="←" 
+                FontSize="50" TextColor="{AppThemeBinding Light=Black, Dark=White}" BackgroundColor="Transparent" WidthRequest="80" HeightRequest="120" CornerRadius="40" Padding="0,0,0,15"
+                AbsoluteLayout.LayoutBounds="-0.01,0.5,80,120" AbsoluteLayout.LayoutFlags="PositionProportional" Pressed="OnLeftPressed" Released="OnLeftReleased" />
 
-            <Button Text="→" FontSize="50" TextColor="White" BackgroundColor="Transparent" WidthRequest="80" HeightRequest="120" CornerRadius="40" Padding="0,0,0,15"
-              AbsoluteLayout.LayoutBounds="1.01,0.5,80,120" AbsoluteLayout.LayoutFlags="PositionProportional" Pressed="OnRightPressed" Released="OnRightReleased" />
+            <Button Text="→" 
+                FontSize="50" TextColor="{AppThemeBinding Light=Black, Dark=White}" BackgroundColor="Transparent" WidthRequest="80" HeightRequest="120" CornerRadius="40" Padding="0,0,0,15"
+                AbsoluteLayout.LayoutBounds="1.01,0.5,80,120" AbsoluteLayout.LayoutFlags="PositionProportional" Pressed="OnRightPressed" Released="OnRightReleased" />
         </AbsoluteLayout>
 
         <AbsoluteLayout WidthRequest="300" HeightRequest="80" AbsoluteLayout.LayoutBounds="0.5,0.76,300,80" AbsoluteLayout.LayoutFlags="PositionProportional">
 
-            <Button Text="↩" FontSize="40" TextColor="White" BackgroundColor="#2D2D2D" WidthRequest="80" HeightRequest="80" CornerRadius="40" Padding="0,0,4,10"
-              AbsoluteLayout.LayoutBounds="-0.05,2,60,60" AbsoluteLayout.LayoutFlags="PositionProportional" Command="{Binding SendCommand}" CommandParameter="CLICK:BACK" />
+            <Button
+                Text="↩" 
+                FontSize="40" 
+                TextColor="{AppThemeBinding Light=Black, Dark=White}" 
+                BackgroundColor="{AppThemeBinding Light=#E0E0E0, Dark=#2D2D2D}" 
+                WidthRequest="80"
+                HeightRequest="80" 
+                CornerRadius="40" 
+                Padding="0,0,4,10"
+                AbsoluteLayout.LayoutBounds="-0.05,2,60,60"
+                AbsoluteLayout.LayoutFlags="PositionProportional" 
+                Command="{Binding SendCommand}" 
+                CommandParameter="CLICK:BACK" />
 
-            <Button Text="⌂" FontSize="40" TextColor="White" BackgroundColor="#2D2D2D" WidthRequest="110" HeightRequest="110" CornerRadius="60" Padding="0,0,0,5"
-              AbsoluteLayout.LayoutBounds="0.5,2,60,60" AbsoluteLayout.LayoutFlags="PositionProportional" Command="{Binding SendCommand}" CommandParameter="CLICK:HOME" />
+            <Button Text="⌂" 
+                FontSize="40" TextColor="{AppThemeBinding Light=Black, Dark=White}" BackgroundColor="{AppThemeBinding Light=#E0E0E0, Dark=#2D2D2D}" WidthRequest="110" HeightRequest="110" CornerRadius="60" Padding="0,0,0,5"
+                AbsoluteLayout.LayoutBounds="0.5,2,60,60" AbsoluteLayout.LayoutFlags="PositionProportional" Command="{Binding SendCommand}" CommandParameter="CLICK:HOME" />
 
-            <Button Text="🖱️" FontSize="30" TextColor="White" BackgroundColor="#2D2D2D" WidthRequest="80" HeightRequest="80" CornerRadius="40" Padding="0"
-              AbsoluteLayout.LayoutBounds="1.05,2,60,60" AbsoluteLayout.LayoutFlags="PositionProportional" Command="{Binding SendCommand}" CommandParameter="CLICK:MOUSERIGHT" />
+            <Button Text="🖱️" 
+                FontSize="30" TextColor="{AppThemeBinding Light=Black, Dark=White}" BackgroundColor="{AppThemeBinding Light=#E0E0E0, Dark=#2D2D2D}" WidthRequest="80" HeightRequest="80" CornerRadius="40" Padding="0"
+                AbsoluteLayout.LayoutBounds="1.05,2,60,60" AbsoluteLayout.LayoutFlags="PositionProportional" Command="{Binding SendCommand}" CommandParameter="CLICK:MOUSERIGHT" />
         </AbsoluteLayout>
 
         <AbsoluteLayout WidthRequest="300" HeightRequest="80" AbsoluteLayout.LayoutBounds="0.5,0.94,300,80" AbsoluteLayout.LayoutFlags="PositionProportional">
-            <Button Text="🔇" FontSize="30" TextColor="White" BackgroundColor="#2D2D2D" WidthRequest="80" HeightRequest="80" CornerRadius="40" Padding="0"
-              AbsoluteLayout.LayoutBounds="-0.05,2,60,60" AbsoluteLayout.LayoutFlags="PositionProportional" Command="{Binding SendCommand}" CommandParameter="CLICK:MUTE" />
+            <Button
+                Text="🔇"
+                FontSize="30"
+                TextColor="{AppThemeBinding Light=Black, Dark=White}"
+                BackgroundColor="{AppThemeBinding Light=#E0E0E0, Dark=#2D2D2D}"
+                WidthRequest="80"
+                HeightRequest="80" 
+                CornerRadius="40" 
+                Padding="1,0,0,1"
+                AbsoluteLayout.LayoutBounds="-0.05,2,60,60" 
+                AbsoluteLayout.LayoutFlags="PositionProportional" 
+                Command="{Binding SendCommand}" 
+                CommandParameter="CLICK:MUTE" />
 
-            <Button Text="–" FontSize="50" TextColor="White" BackgroundColor="#2D2D2D" WidthRequest="80" HeightRequest="80" CornerRadius="40" Padding="0,0,0,10"
-              AbsoluteLayout.LayoutBounds="0.5,2,60,60" AbsoluteLayout.LayoutFlags="PositionProportional" Command="{Binding SendCommand}" CommandParameter="CLICK:VOLDOWN" />
+            <Button Text="–" 
+                FontSize="50" TextColor="{AppThemeBinding Light=Black, Dark=White}" BackgroundColor="{AppThemeBinding Light=#E0E0E0, Dark=#2D2D2D}" WidthRequest="80" HeightRequest="80" CornerRadius="40" Padding="0,0,0,10"
+                AbsoluteLayout.LayoutBounds="0.5,2,60,60" AbsoluteLayout.LayoutFlags="PositionProportional" Command="{Binding SendCommand}" CommandParameter="CLICK:VOLDOWN" />
 
-            <Button Text="+" FontSize="50" TextColor="White" BackgroundColor="#2D2D2D" WidthRequest="80" HeightRequest="80" CornerRadius="40" Padding="1,0,0,1"
-              AbsoluteLayout.LayoutBounds="1.05,2,60,60" AbsoluteLayout.LayoutFlags="PositionProportional" Command="{Binding SendCommand}" CommandParameter="CLICK:VOLUP" />
+            <Button
+                Text="+"
+                FontSize="50"
+                TextColor="{AppThemeBinding Light=Black, Dark=White}"
+                BackgroundColor="{AppThemeBinding Light=#E0E0E0, Dark=#2D2D2D}"
+                WidthRequest="80" 
+                HeightRequest="80" 
+                CornerRadius="40"
+                Padding="1,0,0,1"
+                AbsoluteLayout.LayoutBounds="1.05,2,60,60"
+                AbsoluteLayout.LayoutFlags="PositionProportional" 
+                Command="{Binding SendCommand}" 
+                CommandParameter="CLICK:VOLUP" />
         </AbsoluteLayout>
 
         <AbsoluteLayout WidthRequest="300" HeightRequest="80" AbsoluteLayout.LayoutBounds="0.5,0.03,300,80" AbsoluteLayout.LayoutFlags="PositionProportional">
 
-            <Frame IsVisible="{Binding IsIpEntryVisible}" BackgroundColor="#2D2D2D" CornerRadius="30" Padding="0" HasShadow="False" HeightRequest="60" WidthRequest="170" BorderColor="Transparent"
-                   AbsoluteLayout.LayoutBounds="-0.05,1,170,60" AbsoluteLayout.LayoutFlags="PositionProportional" ZIndex="10">
+            <Frame
+                IsVisible="{Binding IsIpEntryVisible}" 
+                BackgroundColor="{AppThemeBinding Light=#E0E0E0, Dark=#2D2D2D}" 
+                CornerRadius="30" 
+                Padding="0" 
+                HasShadow="False" 
+                HeightRequest="60" 
+                WidthRequest="170" 
+                BorderColor="Transparent"
+                AbsoluteLayout.LayoutBounds="-0.15,1,170,60"
+                AbsoluteLayout.LayoutFlags="PositionProportional"
+                ZIndex="10">
 
-                <Entry Text="{Binding IpAddress}" Placeholder="IP Adresa" FontSize="18" TextColor="White" PlaceholderColor="Gray" 
-                       HorizontalTextAlignment="Center" VerticalTextAlignment="Center" HeightRequest="60" Margin="0" BackgroundColor="Transparent"
-                       ReturnCommand="{Binding ToggleIpEntryCommand}" />
+                <Entry
+                    Text="{Binding IpAddress}" 
+                    Placeholder="IP Adresa" 
+                    FontSize="18"
+                    TextColor="{AppThemeBinding Light=Black, Dark=White}" 
+                    PlaceholderColor="{AppThemeBinding Light=DarkGray, Dark=Gray}" 
+                    HorizontalTextAlignment="Center" 
+                    VerticalTextAlignment="Center" 
+                    HeightRequest="60" 
+                    Margin="0" 
+                    BackgroundColor="Transparent"
+                    ReturnCommand="{Binding ToggleIpEntryCommand}" />
             </Frame>
 
-            <Button Text="{Binding ConnectButtonText}" FontSize="22" TextColor="White" BackgroundColor="{Binding ConnectButtonColor}" WidthRequest="170" HeightRequest="60" CornerRadius="30" Padding="0"
-                AbsoluteLayout.LayoutBounds="-0.05,1,170,60" AbsoluteLayout.LayoutFlags="PositionProportional"
-                Pressed="OnConnectPressed" Released="OnConnectReleased" ZIndex="5"/>
+            <Button
+                Text="{Binding ConnectButtonText}" 
+                FontSize="22" 
+                TextColor="{AppThemeBinding Light=Black, Dark=White}" 
+                BackgroundColor="{Binding ConnectButtonColor}" 
+                WidthRequest="170" 
+                HeightRequest="60" 
+                CornerRadius="30" 
+                Padding="0"
+                AbsoluteLayout.LayoutBounds="-0.15,1,170,60"
+                AbsoluteLayout.LayoutFlags="PositionProportional"
+                Pressed="OnConnectPressed" 
+                Released="OnConnectReleased" 
+                ZIndex="5"/>
 
-            <Button Text="⦿" FontSize="40" TextColor="White" BackgroundColor="Transparent" WidthRequest="60" HeightRequest="60" CornerRadius="30" Padding="1,-2,0,0"
+            <Button Text="⦿" FontSize="40" 
+                TextColor="{AppThemeBinding Light=Black, Dark=White}" 
+                BackgroundColor="Transparent" WidthRequest="60" HeightRequest="60" CornerRadius="30" Padding="1,-2,0,0"
                 AbsoluteLayout.LayoutBounds="0.745,1,60,60" AbsoluteLayout.LayoutFlags="PositionProportional" Clicked="OnTouchpadClicked" />
 
-            <Button Text="⌨️" FontSize="40" TextColor="White" BackgroundColor="Transparent" WidthRequest="60" HeightRequest="60" CornerRadius="30" Padding="0"
+            <Button Text="⌨️" FontSize="40" 
+                TextColor="{AppThemeBinding Light=Black, Dark=White}" 
+                BackgroundColor="Transparent" WidthRequest="60" HeightRequest="60" CornerRadius="30" Padding="0"
                 AbsoluteLayout.LayoutBounds="1.1,1,60,60" AbsoluteLayout.LayoutFlags="PositionProportional" Clicked="OnKeyboardClicked" />
         </AbsoluteLayout>
     </AbsoluteLayout>

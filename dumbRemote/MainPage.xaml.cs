@@ -39,6 +39,14 @@ namespace dumbRemote
         // --- Keyboard State ---
         private bool _keyboardVisible = false;
 
+        // Joystick vars
+        private double _centerX, _centerY;
+        private double _maxRadius;
+        private bool _isDragging = false;
+        private CancellationTokenSource? _joystickLoopCts;
+        private bool _isResettingText = false;
+        private const string KEYBOARD_BUFFER = "   ";
+
         public MainPage(MainViewModel viewModel)
         {
             InitializeComponent();
@@ -86,15 +94,14 @@ namespace dumbRemote
 
         void UpdateMaxKnobGeometry()
         {
-            if (TouchpadLayout.Width <= 0 || TouchpadLayout.Height <= 0 || Knob.Width <= 0) return;
+            if (TouchpadLayout.Width <= 0) return;
 
-            _touchpadCenter = new Point(TouchpadLayout.Width / 2d, TouchpadLayout.Height / 2d);
-            const double safeMargin = 10d;
+            _centerX = TouchpadLayout.Width / 2;
+            _centerY = TouchpadLayout.Height / 2;
 
-            _maxKnobDistance = ((TouchpadLayout.Width - Knob.Width) / 2d) - safeMargin;
-            if (_maxKnobDistance < 0) _maxKnobDistance = 0;
+            _maxRadius = (TouchpadLayout.Width / 2) - (Knob.Width / 2);
 
-            if (!_knobGrabbed) CenterKnob();
+            if (!_isDragging) ResetKnob();
         }
 
         void OnTouchpadClicked(object sender, EventArgs e)
@@ -157,7 +164,86 @@ namespace dumbRemote
             SendMoveFromOffset(offset);
         }
 
-        void OnKnobPanUpdated(object? sender, PanUpdatedEventArgs e) => HandlePan(e, true);
+        void OnKnobPanUpdated(object sender, PanUpdatedEventArgs e)
+        {
+            switch (e.StatusType)
+            {
+                case GestureStatus.Started:
+                    _isDragging = true;
+                    StartJoystickLoop();
+                    break;
+
+                case GestureStatus.Running:
+
+                    double vectorX = e.TotalX;
+                    double vectorY = e.TotalY;
+
+                    double distance = Math.Sqrt(vectorX * vectorX + vectorY * vectorY);
+                    if (distance > _maxRadius)
+                    {
+                        double ratio = _maxRadius / distance;
+                        vectorX *= ratio;
+                        vectorY *= ratio;
+                    }
+
+                    Knob.TranslationX = vectorX;
+                    Knob.TranslationY = vectorY;
+                    break;
+
+                case GestureStatus.Completed:
+                case GestureStatus.Canceled:
+                    _isDragging = false;
+                    StopJoystickLoop();
+                    ResetKnob();
+                    break;
+            }
+        }
+
+        void ResetKnob()
+        {
+            Knob.TranslateTo(0, 0, 100, Easing.SpringOut);
+        }
+
+        void StartJoystickLoop()
+        {
+            if (_joystickLoopCts != null) return;
+            _joystickLoopCts = new CancellationTokenSource();
+            var token = _joystickLoopCts.Token;
+
+            Task.Run(async () =>
+            {
+                while (!token.IsCancellationRequested && _isDragging)
+                {
+                    double tx = Knob.TranslationX;
+                    double ty = Knob.TranslationY;
+
+                    double normX = tx / _maxRadius;
+                    double normY = ty / _maxRadius;
+
+                    double curveX = normX * normX * Math.Sign(normX);
+                    double curveY = normY * normY * Math.Sign(normY);
+
+                    double maxSpeed = 35.0;
+
+                    int dx = (int)(curveX * maxSpeed);
+                    int dy = (int)(curveY * maxSpeed);
+
+                    if (dx != 0 || dy != 0)
+                    {
+                        _viewModel.SendMove(dx, dy);
+                    }
+
+                    await Task.Delay(25);
+                }
+            });
+        }
+
+        void StopJoystickLoop()
+        {
+            _joystickLoopCts?.Cancel();
+            _joystickLoopCts = null;
+        }
+
         void OnTouchpadPanUpdated(object? sender, PanUpdatedEventArgs e) => HandlePan(e, false);
 
         void HandlePan(PanUpdatedEventArgs e, bool isKnobDirect)
@@ -330,7 +416,13 @@ namespace dumbRemote
         {
             if (!_keyboardVisible)
             {
+                _isResettingText = true;
+                KeyboardEntry.Text = KEYBOARD_BUFFER;
+                _isResettingText = false;
+
                 KeyboardEntry.Focus();
+
+                KeyboardEntry.CursorPosition = KEYBOARD_BUFFER.Length;
                 _keyboardVisible = true;
             }
             else
@@ -338,7 +430,6 @@ namespace dumbRemote
                 KeyboardEntry.Unfocus();
                 HideKeyboard();
                 _keyboardVisible = false;
-                KeyboardEntry.Text = "";
             }
         }
 
@@ -360,24 +451,42 @@ namespace dumbRemote
         {
             _keyboardVisible = false;
             _viewModel.TypeTextCommand.Execute("\n");
-            KeyboardEntry.Text = "";
+
+            _isResettingText = true;
+            KeyboardEntry.Text = KEYBOARD_BUFFER;
+            _isResettingText = false;
         }
 
         void KeyboardEntry_TextChanged(object sender, TextChangedEventArgs e)
         {
-            var newText = e.NewTextValue ?? "";
-            var oldText = e.OldTextValue ?? "";
+            if (_isResettingText) return;
 
-            int added = newText.Length - oldText.Length;
+            string newText = e.NewTextValue;
 
-            if (added > 0)
-            {
-                var c = newText.Last().ToString();
-                _viewModel.TypeTextCommand.Execute(c);
-            }
-            else if (added < 0)
+            if (newText.Length < KEYBOARD_BUFFER.Length)
             {
                 _viewModel.SendCommand.Execute("BACKSPACE");
+
+                _isResettingText = true;
+                KeyboardEntry.Text = KEYBOARD_BUFFER;
+                KeyboardEntry.CursorPosition = KEYBOARD_BUFFER.Length;
+                _isResettingText = false;
+                return;
+            }
+
+            if (newText.Length > KEYBOARD_BUFFER.Length)
+            {
+                string typedContent = newText.Substring(KEYBOARD_BUFFER.Length);
+
+                if (!string.IsNullOrEmpty(typedContent))
+                {
+                    _viewModel.TypeTextCommand.Execute(typedContent);
+                }
+
+                _isResettingText = true;
+                KeyboardEntry.Text = KEYBOARD_BUFFER;
+                KeyboardEntry.CursorPosition = KEYBOARD_BUFFER.Length;
+                _isResettingText = false;
             }
         }
 
