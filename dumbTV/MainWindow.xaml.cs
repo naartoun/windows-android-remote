@@ -262,6 +262,14 @@ namespace dumbTV
                 {
                     _inputService.SendChar(cmd[5]);
                 }
+                else if (cmd == "POWER:OFF")
+                {
+                    Process.Start(new ProcessStartInfo("shutdown", "/s /t 0")
+                    {
+                        CreateNoWindow = true,
+                        UseShellExecute = false
+                    });
+                }
                 else if (cmd.StartsWith("MOVE:"))
                 {
                     var parts = cmd.Split(':');

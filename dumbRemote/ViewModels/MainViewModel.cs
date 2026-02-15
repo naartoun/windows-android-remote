@@ -12,6 +12,8 @@ using System.Windows.Input;
 using Microsoft.Maui.Graphics;
 using dumbRemote.Services;
 using Microsoft.Maui.Storage;
+using System.Net.Sockets;
+using System.Net;
 
 namespace dumbRemote.ViewModels
 {
@@ -68,8 +70,44 @@ namespace dumbRemote.ViewModels
             }
         }
 
-        // --- Commands (Buttons) ---
+        private string _macAddress;
+        public string MacAddress
+        {
+            get => _macAddress;
+            set
+            {
+                if (SetProperty(ref _macAddress, value))
+                    Preferences.Set("LastMacAddress", value);
+            }
+        }
 
+        private bool _isMacEntryVisible;
+        public bool IsMacEntryVisible
+        {
+            get => _isMacEntryVisible;
+            set => SetProperty(ref _isMacEntryVisible, value);
+        }
+
+        private string _shutdownButtonText = "Vypnout";
+        public string ShutdownButtonText
+        {
+            get => _shutdownButtonText;
+            set => SetProperty(ref _shutdownButtonText, value);
+        }
+
+        private Color _shutdownButtonColor = Color.FromArgb("#2D2D2D");
+        public Color ShutdownButtonColor
+        {
+            get => _shutdownButtonColor;
+            set => SetProperty(ref _shutdownButtonColor, value);
+        }
+
+        private bool _isShutdownConfirm = false;
+
+        // --- Commands (Buttons) ---
+        public ICommand WakeOnLanCommand { get; }
+        public ICommand ToggleMacEntryCommand { get; }
+        public ICommand ShutdownCommand { get; }
         public ICommand ConnectCommand { get; }
         public ICommand ToggleIpEntryCommand { get; }
         public ICommand SendCommand { get; }
@@ -84,21 +122,23 @@ namespace dumbRemote.ViewModels
             IpAddress = Preferences.Get("LastIpAddress", "192.168.0.x");
             IsIpEntryVisible = false;
 
-            // Subscribe to service events to keep UI in sync
             _webSocketService.Connected += (s, e) => IsConnected = true;
             _webSocketService.Disconnected += (s, e) => IsConnected = false;
 
-            // Initialize Commands
+            IpAddress = Preferences.Get("LastIpAddress", "192.168.0.x");
+            MacAddress = Preferences.Get("LastMacAddress", "00:00:00:00:00:00");
+
+            IsIpEntryVisible = false;
+            IsMacEntryVisible = false;
+
             ConnectCommand = new Command(async () => await OnConnectAsync());
-
-            // Command for showing IP Address entry
             ToggleIpEntryCommand = new Command(() => IsIpEntryVisible = !IsIpEntryVisible);
-
-            // Generic command for simple buttons (e.g., CommandParameter="CLICK:HOME")
             SendCommand = new Command<string>(async (cmd) => await _webSocketService.SendMessageAsync(cmd));
-
-            // Command for typing text
             TypeTextCommand = new Command<string>(async (txt) => await SendTypeCommand(txt));
+
+            ToggleMacEntryCommand = new Command(() => IsMacEntryVisible = !IsMacEntryVisible);
+            WakeOnLanCommand = new Command(async () => await OnWakeOnLanAsync());
+            ShutdownCommand = new Command(OnShutdown);
         }
 
         // --- Logic ---
@@ -179,6 +219,66 @@ namespace dumbRemote.ViewModels
         {
             if (!IsConnected) return;
             await _webSocketService.SendMessageAsync($"MOVE:{dx}:{dy}");
+        }
+
+        private async Task OnWakeOnLanAsync()
+        {
+            if (string.IsNullOrWhiteSpace(MacAddress)) return;
+
+            IsMacEntryVisible = false;
+
+            try
+            {
+                string mac = MacAddress.Replace(":", "").Replace("-", "").Trim();
+                if (mac.Length != 12) return;
+
+                byte[] macBytes = new byte[6];
+                for (int i = 0; i < 6; i++)
+                {
+                    macBytes[i] = Convert.ToByte(mac.Substring(i * 2, 2), 16);
+                }
+
+                byte[] packet = new byte[6 + 16 * 6];
+                for (int i = 0; i < 6; i++) packet[i] = 0xFF;
+                for (int i = 1; i <= 16; i++)
+                    Buffer.BlockCopy(macBytes, 0, packet, i * 6, 6);
+
+                using var client = new UdpClient();
+                client.EnableBroadcast = true;
+                await client.SendAsync(packet, packet.Length, new IPEndPoint(IPAddress.Broadcast, 9));
+            }
+            catch {  }
+        }
+
+        private void OnShutdown()
+        {
+            if (!_isShutdownConfirm)
+            {
+                _isShutdownConfirm = true;
+                ShutdownButtonText = "Opravdu?";
+                ShutdownButtonColor = Colors.DarkRed;
+
+                Task.Delay(3000).ContinueWith(_ =>
+                {
+                    MainThread.BeginInvokeOnMainThread(() =>
+                    {
+                        _isShutdownConfirm = false;
+                        ShutdownButtonText = "Vypnout";
+                        ShutdownButtonColor = Color.FromArgb("#2D2D2D");
+                    });
+                });
+            }
+            else
+            {
+                if (IsConnected)
+                {
+                    _ = _webSocketService.SendMessageAsync("POWER:OFF");
+                }
+
+                _isShutdownConfirm = false;
+                ShutdownButtonText = "Vypnout";
+                ShutdownButtonColor = Color.FromArgb("#2D2D2D");
+            }
         }
     }
 }

@@ -491,5 +491,46 @@ namespace dumbRemote
         }
 
         #endregion
+
+        // --- WOL Button Long Press Logic ---
+        private CancellationTokenSource? _wolLongPressCts;
+        private bool _isWolLongPressActionTriggered;
+
+        private async void OnWolPressed(object sender, EventArgs e)
+        {
+            _isWolLongPressActionTriggered = false;
+            _wolLongPressCts = new CancellationTokenSource();
+
+            try
+            {
+                await Task.Delay(800, _wolLongPressCts.Token);
+                _isWolLongPressActionTriggered = true;
+
+                MainThread.BeginInvokeOnMainThread(() =>
+                {
+                    try { HapticFeedback.Perform(HapticFeedbackType.LongPress); } catch { }
+                    _viewModel.ToggleMacEntryCommand.Execute(null);
+                });
+            }
+            catch (TaskCanceledException) { }
+        }
+
+        private void OnWolReleased(object sender, EventArgs e)
+        {
+            _wolLongPressCts?.Cancel();
+
+            if (!_isWolLongPressActionTriggered)
+            {
+                if (_viewModel.IsMacEntryVisible)
+                {
+                    _viewModel.ToggleMacEntryCommand.Execute(null);
+                    _viewModel.WakeOnLanCommand.Execute(null);
+                }
+                else
+                {
+                    _viewModel.WakeOnLanCommand.Execute(null);
+                }
+            }
+        }
     }
 }
